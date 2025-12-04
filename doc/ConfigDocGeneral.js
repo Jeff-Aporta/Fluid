@@ -188,7 +188,7 @@ window.ConfigDocGeneral = {
                 const setupZoom = (container, svg) => {
                     // Check if overlay already exists to prevent duplicates
                     if (!container || !svg || container.querySelector('.zoom-overlay')) return;
-                    
+
                     container.dataset.zoomAttached = "true";
                     container.style.position = 'relative';
                     container.style.display = 'inline-block';
@@ -200,7 +200,7 @@ window.ConfigDocGeneral = {
                     if (window.mediumZoom) {
                         const img = document.createElement('img');
                         img.classList.add('zoom-overlay');
-                        
+
                         // Overlay styles
                         Object.assign(img.style, {
                             position: 'absolute',
@@ -219,15 +219,15 @@ window.ConfigDocGeneral = {
                         const zoom = window.mediumZoom(img, { background: '#0f172a' });
 
                         img.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            
+                            // e.stopPropagation(); // Removed to allow zoom-loupe.js to detect the click
+
                             // Refresh Image Source from CURRENT SVG
                             const currentSvg = container.querySelector('svg');
                             if (currentSvg) {
                                 const svgCode = currentSvg.outerHTML;
                                 const encodedSvg = encodeURIComponent(svgCode);
                                 const dataUri = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
-                                
+
                                 // Only update if changed
                                 if (img.src !== dataUri) {
                                     img.src = dataUri;
@@ -237,6 +237,14 @@ window.ConfigDocGeneral = {
                             // Open zoom
                             img.style.opacity = '1';
                             zoom.open();
+
+                            // Force Loupe Update (wait for zoom-loupe.js 300ms delay)
+                            setTimeout(() => {
+                                const loupe = document.querySelector('.fluid-loupe');
+                                if (loupe) {
+                                    loupe.style.backgroundImage = `url("${img.src}")`;
+                                }
+                            }, 350);
                         });
 
                         zoom.on('closed', () => {
