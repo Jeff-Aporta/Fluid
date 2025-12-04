@@ -457,6 +457,10 @@
 
             ".sidebar": {
                 left: -300,
+                zIndex: 9999,
+                top: 0,
+                bottom: 0,
+                overflowY: $.auto,
                 transition: $.transition([{ prop: "transform", time: "250ms", ease: "ease-out" }])
             },
 
@@ -465,7 +469,7 @@
                 maxWidth: $.vw(100),
                 position: $.static,
                 paddingTop: 20,
-                transition: $.transition([{ prop: "transform", time: "250s", ease: "ease" }])
+                transition: $.transition([{ prop: "transform", time: "250ms", ease: "ease" }])
             },
 
             ".app-nav, .github-corner": {
@@ -479,23 +483,26 @@
                 borderBottom: $.border({ width: 1, color: $.cssVar("border-color") }),
                 outline: $.none,
                 padding: 12,
-                position: $.sticky,
+                position: $.fixed,
                 top: 0,
-                left: 0
+                left: 0,
+                width: $.percent(100),
+                zIndex: 10000
             },
 
             "body.close": {
                 ".sidebar": {
-                    transform: $.transform().translateX(300).str()
+                    transform: $.transform().translateX(300).str(),
+                    boxShadow: "0 0 50px rgba(0,0,0,0.5)" // Add shadow when open for overlay effect
                 },
                 ".sidebar-toggle": {
                     backgroundColor: $.rgba(255, 255, 255, 0.95),
-                    transition: $.transition([{ prop: "background-color", time: "1s" }]),
+                    transition: $.transition([{ prop: "background-color", time: "0.2s" }]), // Faster transition
                     width: 284,
                     padding: 10
                 },
                 ".content": {
-                    transform: $.transform().translateX(300).str()
+                    // Removed transform to prevent content shift
                 },
                 ".app-nav, .github-corner": {
                     display: $.none

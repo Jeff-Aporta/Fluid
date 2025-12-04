@@ -309,7 +309,7 @@ export const sepia = (v: TStrNum) => `sepia(${v})`;
 export const HELPERS: THelpers = {
     /* Display */ none: "none", hidden: "hidden", visible: "visible", absolute: "absolute", relative: "relative", block: "block", inline: "inline", inlineBlock: "inline-block", flex: "flex", grid: "grid",
     /* Globales */ auto: "auto", inherit: "inherit", initial: "initial", unset: "unset", transparent: "transparent", currentColor: "currentColor", pointer: "pointer", squareRatio: "1 / 1",
-    /* Texto */ normal: "normal", left: "left", uppercase: "uppercase", nowrap: "nowrap", dark: "dark", light: "light", thin: "thin",
+    /* Texto */ normal: "normal", left: "left", center: "center", uppercase: "uppercase", nowrap: "nowrap", dark: "dark", light: "light", thin: "thin",
     /* UI */ notAllowed: "not-allowed", borderBox: "border-box", antialiased: "antialiased", touch: "touch", middle: "middle",
     /* Posicion */ fixed: "fixed", sticky: "sticky", static: "static", flexStart: "flex-start", top: "top", right: "right", bottom: "bottom", topRight: "top right", topLeft: "top left", bottomRight: "bottom right", bottomLeft: "bottom left",
     /* Funciones */ range, rangeMapEntries, transition, transform, boxShadow, convertBoxShadow, border, rgb, rgba, important, cubicBezier, lerpcss, hsl, lightDark, calc, url, format, linearGradient, radialGradient, background, font, fontFamily, margin, padding, join, hslFrom, rgbFrom, cssVar,

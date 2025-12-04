@@ -57,57 +57,7 @@
     <script src="./doc/style-components.js"></script>
     <script src="./doc/style-layout.js"></script>
     <style>
-        .medium-zoom-overlay {
-            background: #0f172a !important;
-        }
-
-        /* 1. Animación de FLUJO (Líneas punteadas) */
-        @keyframes dashAnimation {
-            from {
-                stroke-dashoffset: 20;
-            }
-
-            to {
-                stroke-dashoffset: 0;
-            }
-        }
-
-        /* Selecciona los edges que tienen la clase "flow" en el DOT */
-        .flow path {
-            stroke-dasharray: 5, 5 !important;
-            /* Fuerza el punteado */
-            animation: dashAnimation 1s linear infinite;
-        }
-
-        /* 2. Animación de TITILAMIENTO (Browser) */
-        @keyframes glowPulse {
-            0% {
-                opacity: 1;
-
-            }
-
-            50% {
-                opacity: 0.6;
-
-            }
-
-            100% {
-                opacity: 1;
-
-            }
-        }
-
-        /* Selecciona el nodo con clase "pulse" */
-        .pulse polygon,
-        .pulse path {
-            animation: glowPulse 2s infinite ease-in-out;
-        }
-
-        /* Asegura que el texto no desaparezca con la opacidad del fondo si no quieres */
-        .pulse text {
-            fill: #000 !important;
-            font-weight: bold;
-        }
+      
     </style>
 </head>
 
@@ -118,10 +68,10 @@
     <footer class="app-footer">
         <span class="creator-info">Jeffrey Agudelo</span>
         <div class="social-links">
-            <a href="https://youtube.com" target="_blank" class="social-btn" title="YouTube">
+            <a href="https://www.youtube.com/@JeffAporta" target="_blank" class="social-btn" title="YouTube">
                 <i class="fab fa-youtube fa-2xl"></i>
             </a>
-            <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">
+            <a href="https://github.com/Jeff-Aporta" target="_blank" class="social-btn" title="GitHub">
                 <i class="fab fa-github fa-2xl"></i>
             </a>
         </div>

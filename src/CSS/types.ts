@@ -12,7 +12,7 @@ export type THelpers = {
     block: string; inline: string; inlineBlock: string; flex: string; grid: string
     auto: string; inherit: string; initial: string; unset: string; transparent: string
     currentColor: string; pointer: string; squareRatio: string
-    normal: string; left: string; uppercase: string; nowrap: string; dark: string; light: string; thin: string
+    normal: string; left: string; center: string; uppercase: string; nowrap: string; dark: string; light: string; thin: string
     notAllowed: string; borderBox: string; antialiased: string; touch: string; middle: string
     fixed: string; sticky: string; static: string; flexStart: string;
     top: string; right: string; bottom: string;

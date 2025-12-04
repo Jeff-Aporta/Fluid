@@ -28,7 +28,7 @@ function element(target: ElementTarget): HTMLElementBuilder
 **Flujo Detallado de Creación de Elementos:**
 
 ```mermaid
-flowchart LR
+flowchart TB
     Start(["Llamada a element()"]) --> InputAnalysis{"¿Tipo de Argumento?"}
     
     InputAnalysis -- "Cadena" --> EmmetParser["Análisis Regex: Etiqueta, ID, Clase, Attrs"]

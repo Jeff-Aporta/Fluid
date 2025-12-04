@@ -58,10 +58,10 @@ if (typeof FluidUI === 'undefined') {
                 width: $.px(6)
             },
             "&::-webkit-scrollbar-track": {
-                background: "black"
+                background: $.rgb(19, 19, 52)
             },
             "&::-webkit-scrollbar-thumb": {
-                background: "black",
+                background: $.rgb(19, 19, 52),
                 borderRadius: 4,
                 transition: $.transition([{ prop: "background", time: $.cssVar("transition-base") }])
             },
@@ -267,5 +267,40 @@ if (typeof FluidUI === 'undefined') {
                 verticalAlign: $.middle
             }
         },
+
+    ".medium-zoom-overlay": {
+        background: $.important("#0f172a"),
+    },
+    "@keyframes dashAnimation": {
+        from: {
+            strokeDashoffset: 20,
+        },
+        to: {
+            strokeDashoffset: 0,
+        },
+    },
+    ".flow path": {
+        strokeDasharray: $.important("5, 5"),
+        animation: "dashAnimation 1s linear infinite",
+    },
+    "@keyframes glowPulse": {
+        "0%": {
+            opacity: 1,
+        },
+        "50%": {
+            opacity: 0.6,
+        },
+        "100%": {
+            opacity: 1,
+        },
+    },
+    ".pulse polygon, .pulse path": {
+        animation: "glowPulse 2s infinite ease-in-out",
+    },
+    ".pulse text": {
+        fill: $.important("#000"),
+        fontWeight: "bold",
+    },
+
     }));
 })();

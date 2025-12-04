@@ -440,7 +440,8 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
             i = j;
 
             const childBody = parseBlock(blockContent, depth + 1, options);
-            const key = selector.includes("&") || selector.startsWith(":") || selector.startsWith("@") || selector.includes(" ") || selector.includes(".") || selector.includes("#") || selector.includes("*") ? `"${selector}"` : selector;
+            const isPercentage = /^\d+%$/.test(selector);
+            const key = selector.includes("&") || selector.startsWith(":") || selector.startsWith("@") || selector.includes(" ") || selector.includes(".") || selector.includes("#") || selector.includes("*") || isPercentage ? `"${selector}"` : selector;
             children.push(`${"    ".repeat(depth)}${key}: ${childBody}`);
         } else if ((char === ";" || char === "}") && pDepth === 0) {
             const trimmedBuffer = buffer.trim();

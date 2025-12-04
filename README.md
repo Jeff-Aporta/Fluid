@@ -195,4 +195,4 @@ Se postula que Fluid UI representa un equilibrio pragmático en el desarrollo fr
 
 La siguiente sección incorpora un marco en línea (iframe) diseñado para la previsualización directa de esta documentación técnica a través del motor de renderizado Docsify, permitiendo una experiencia de lectura interactiva y formateada.
 
-<iframe id='traductor-frame' src='traductor.html' style='width: 100%; height: 100%; border: none;'></iframe>
+<iframe id='traductor-frame' src='traductor.html' style='width: 100%; height: 90vh; border: none;'></iframe>
