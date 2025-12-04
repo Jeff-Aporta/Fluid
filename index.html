@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Documentación Fluid</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="Documentación detallada de la utilidad Fluid">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+
+    <!-- CodeMirror CSS (Loaded after CDN to override defaults) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" />
+    <!-- Fluid UI & Styles -->
+    <script src="js/fluid.js"></script>
+
+    <!-- CodeMirror Main Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/json/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/meta.min.js"></script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="./doc/ConfigDocGeneral.js"></script>
+    <script>
+        window.$docsify = {
+            name: 'Fluid UI',
+            repo: '',
+            loadSidebar: 'doc/md/_sidebar.md',
+            loadNavbar: false,
+            coverpage: 'doc/md/_coverpage.md',
+            auto2top: true,
+            executeScript: true,
+            themeColor: '#00AEEF',
+            alias: {
+                '/.*/_sidebar.md': 'doc/md/_sidebar.md',
+                '/.*/_coverpage.md': 'doc/md/_coverpage.md',
+                '/p-dom.md': 'doc/md/p-dom.md',
+                '/p-helpers.md': 'doc/md/p-helpers.md'
+            },
+            ...(window.ConfigDocGeneral || {}),
+        }
+    </script>
+    <script src="doc/style-base.js"></script>
+    <script src="doc/style-codemirror.js"></script>
+    <script src="doc/style-components.js"></script>
+    <script src="doc/style-layout.js"></script>
+    <style>
+        .medium-zoom-overlay {
+            background: #0f172a !important;
+        }
+
+        /* 1. Animación de FLUJO (Líneas punteadas) */
+        @keyframes dashAnimation {
+            from {
+                stroke-dashoffset: 20;
+            }
+
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Selecciona los edges que tienen la clase "flow" en el DOT */
+        .flow path {
+            stroke-dasharray: 5, 5 !important;
+            /* Fuerza el punteado */
+            animation: dashAnimation 1s linear infinite;
+        }
+
+        /* 2. Animación de TITILAMIENTO (Browser) */
+        @keyframes glowPulse {
+            0% {
+                opacity: 1;
+
+            }
+
+            50% {
+                opacity: 0.6;
+
+            }
+
+            100% {
+                opacity: 1;
+
+            }
+        }
+
+        /* Selecciona el nodo con clase "pulse" */
+        .pulse polygon,
+        .pulse path {
+            animation: glowPulse 2s infinite ease-in-out;
+        }
+
+        /* Asegura que el texto no desaparezca con la opacidad del fondo si no quieres */
+        .pulse text {
+            fill: #000 !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app"></div>
+
+    <footer class="app-footer">
+        <span class="creator-info">Jeffrey Agudelo</span>
+        <div class="social-links">
+            <a href="https://youtube.com" target="_blank" class="social-btn" title="YouTube">
+                <i class="fab fa-youtube fa-2xl"></i>
+            </a>
+            <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">
+                <i class="fab fa-github fa-2xl"></i>
+            </a>
+        </div>
+    </footer>
+
+
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/copy-code.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docsify-progress@latest/dist/progress.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { defaultRenderer: 'elk' }
+        });
+        window.mermaid = mermaid;
+    </script>
+    <script src="//unpkg.com/docsify-mermaid@2.0.1/dist/docsify-mermaid.js"></script>
+    <script src="doc/zoom-loupe.js" defer></script>
+</body>
+
+</html>

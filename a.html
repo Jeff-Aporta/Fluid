@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluid Diagram - Corporate Dark</title>
+    <style>
+        :root {
+            /* Paleta Corporativa Oscura */
+            --bg-body: #0f172a;      /* Slate 900 */
+            --bg-panel: #1e293b;     /* Slate 800 */
+            --border: #334155;       /* Slate 700 */
+            --text-main: #f1f5f9;    /* Slate 100 */
+            --text-muted: #94a3b8;   /* Slate 400 */
+            --primary: #3b82f6;      /* Blue 500 */
+            --accent: #06b6d4;       /* Cyan 500 */
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            height: 95vh;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        h2 { 
+            font-weight: 600; 
+            letter-spacing: -0.5px;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            height: 85%;
+            max-width: 1400px;
+        }
+
+        .editor-box, .preview-box {
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-panel {
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            color: #cbd5e1; /* Slate 300 */
+            border: none;
+            resize: none;
+            outline: none;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 15px;
+        }
+
+        .preview-box {
+            align-items: center;
+            justify-content: center;
+            background: #151e2e; /* Un tono más oscuro para contraste */
+            position: relative;
+        }
+
+        img {
+            max-width: 90%;
+            max-height: 90%;
+            /* Filtro sutil para suavizar si viene blanco puro */
+            filter: contrast(1.05);
+        }
+
+        button {
+            margin-bottom: 20px;
+            padding: 10px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        button:hover { 
+            background-color: #2563eb; /* Blue 600 */
+        }
+        
+        .loading { 
+            color: var(--text-muted); 
+            position: absolute; 
+            display: none; 
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Diagramación Fluid - Modo Empresarial</h2>
+    <button onclick="render()">Actualizar Vista</button>
+
+    <div class="container">
+        <div class="editor-box">
+            <div class="header-panel">Código DOT (Graphviz)</div>
+            <textarea id="dotInput" spellcheck="false">
+digraph G {
+  // CONFIGURACIÓN GLOBAL
+  // Fondo transparente para integrarse con el modo oscuro
+  bgcolor="transparent";
+  rankdir=LR; // Izquierda a Derecha
+  
+  // Estilo de Nodos: Rectángulos modernos, bordes finos
+  node [
+    fontname="Helvetica", 
+    fontsize=11, 
+    shape="record", 
+    style="filled,rounded", 
+    penwidth=1,
+    margin="0.2,0.1"
+  ];
+  
+  // Estilo de Líneas: Gris suave, curvas limpias
+  edge [
+    fontname="Helvetica", 
+    fontsize=9, 
+    color="#64748b", // Slate 500
+    fontcolor="#94a3b8", // Slate 400
+    penwidth=1.2,
+    arrowsize=0.7
+  ];
+
+  // --- PALETA DE COLORES ---
+  // Azul Corporativo (Primary)
+  // Cian Muted (Secondary/Accent)
+  // Gris Oscuro (Database/Infra)
+
+  // DEFINICIÓN DE NODOS
+  
+  // 1. Cliente (Azul Sólido)
+  node [
+    color="#1d4ed8",   // Borde Azul Oscuro
+    fillcolor="#1e3a8a", // Fondo Azul Noche
+    fontcolor="#ffffff"
+  ];
+  Usuario [label="  👤  Usuario Final  "];
+
+  // 2. Sistema Central (Cian Oscuro/Teal)
+  node [
+    color="#0e7490",   // Borde Cyan Oscuro
+    fillcolor="#164e63", // Fondo Cyan Profundo
+    fontcolor="#e0f2fe"
+  ];
+  Backend [label="  ⚙️  API Gateway Fluid  "];
+  ServicioAuth [label="  🔐  Auth Service  "];
+
+  // 3. Datos (Gris/Slate)
+  node [
+    shape="cylinder", // Forma cilíndrica para DB
+    color="#475569", 
+    fillcolor="#1e293b", 
+    fontcolor="#cbd5e1"
+  ];
+  Database [label="  🗄️  PostgreSQL  "];
+
+  // --- RELACIONES ---
+  
+  Usuario -> Backend [label="HTTPS / JSON", color="#3b82f6"];
+  Backend -> ServicioAuth [label="Validar Token"];
+  ServicioAuth -> Backend [label="OK", style="dashed"];
+  Backend -> Database [label="SQL Query"];
+  Database -> Backend [label="Result Set"];
+}
+            </textarea>
+        </div>
+
+        <div class="preview-box">
+            <div class="header-panel">Previsualización</div>
+            <span class="loading" id="loader">Generando gráfico...</span>
+            <img id="diagramOutput" alt="El diagrama aparecerá aquí" />
+        </div>
+    </div>
+
+    <script>
+        function render() {
+            const input = document.getElementById('dotInput').value;
+            const img = document.getElementById('diagramOutput');
+            const loader = document.getElementById('loader');
+
+            loader.style.display = 'block';
+            img.style.opacity = '0.5';
+
+            // Usamos QuickChart.io
+            const url = `https://quickchart.io/graphviz?format=svg&graph=${encodeURIComponent(input)}`;
+
+            img.onload = () => {
+                loader.style.display = 'none';
+                img.style.opacity = '1';
+            };
+            
+            img.onerror = () => {
+                loader.innerText = "Error en la sintaxis DOT";
+                loader.style.color = "#ef4444"; // Rojo error suave
+            }
+
+            img.src = url;
+        }
+
+        window.onload = render;
+        
+        document.getElementById('dotInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') render();
+        });
+    </script>
+
+</body>
+</html>
