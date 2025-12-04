@@ -369,6 +369,7 @@
             textDecoration: $.none,
             fontSize: 9,
             fontWeight: 700,
+            aspectRatio: $.squareRatio,
             transition: $.transition([{ prop: "all", time: "300ms", ease: "cubic-bezier(0.4, 0, 0.2, 1)" }]),
             border: $.border({ color: $.rgba(255, 255, 255, 0.05) }),
             "&:hover": {

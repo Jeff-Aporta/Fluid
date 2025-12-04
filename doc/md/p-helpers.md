@@ -350,18 +350,18 @@ const responsiveFont = lerpcss({
 * **Sinopsis Técnica:** Constructores (Builders) para propiedades CSS que requieren sintaxis compuesta específica.
 * **Tutorial de Implementación:**
 ```typescript
-// Transformaciones
-const tf = transform()
-    .translate(10, 20)
-    .rotate(45)
-    .scale(1.2)
-    .str(); // "translate(10px, 20px) rotate(45deg) scale(1.2)"
+    // Transformaciones
+    const tf = transform()
+        .translate(10, 20)
+        .rotate(45)
+        .scale(1.2)
+        .str(); // "translate(10px, 20px) rotate(45deg) scale(1.2)"
 
-// Transiciones Múltiples
-const tr = transition({
-    opacity: 0.3,
-    transform: { time: 0.5, bezier: [0.4, 0, 0.2, 1] }
-}); // "opacity 0.3s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
+    // Transiciones Múltiples
+    const tr = transition({
+        opacity: 0.3,
+        transform: { time: 0.5, bezier: [0.4, 0, 0.2, 1] }
+    }); // "opacity 0.3s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
 ```
 
 #### 9.4.6. Unidades y Modificadores (px, rem, important, url)
