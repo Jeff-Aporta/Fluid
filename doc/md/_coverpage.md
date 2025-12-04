@@ -1,6 +1,6 @@
 
 
-<img src="doc/assets/insoft-logo.svg" class="insoft-logo-corner" alt="Insoft Logo">
+<img src="./doc/assets/insoft-logo.svg" class="insoft-logo-corner" alt="Insoft Logo">
 
 ![logo](doc/assets/logo.svg)
 
