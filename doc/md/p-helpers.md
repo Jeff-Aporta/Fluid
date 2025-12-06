@@ -116,27 +116,27 @@ if (container) {
 ### 5.2. Utilización de Variables CSS para Tematización
 
 ```typescript
-import { toCSS, insertStyle } from './lib';
+    import { toCSS, insertStyle } from './lib';
 
-// Definir variables globales
-const globalVars = {
-    vars: {
-        brandColor: '#ff5722',
-        spacingUnit: '8px'
-    }
-};
+    // Definir variables globales
+    const globalVars = {
+        vars: {
+            brandColor: '#ff5722',
+            spacingUnit: '8px'
+        }
+    };
 
-// Componente que consume las variables
-const componentStyles = {
-    '.themed-box': {
-        // Uso de helper cssVar para referencia segura
-        backgroundColor: HELPERS.cssVar('brand-color'),
-        padding: HELPERS.calc(c => c.mult(c.var('spacing-unit'), 2)) // calc(var(--spacing-unit) * 2)
-    }
-};
+    // Componente que consume las variables
+    const componentStyles = {
+        '.themed-box': {
+            // Uso de helper cssVar para referencia segura
+            backgroundColor: HELPERS.cssVar('brand-color'),
+            padding: HELPERS.calc(c => c.mult(c.var('spacing-unit'), 2)) // calc(var(--spacing-unit) * 2)
+        }
+    };
 
-insertStyle({ id: 'theme-root', css: globalVars });
-insertStyle({ id: 'component-theme', css: componentStyles });
+    insertStyle({ id: 'theme-root', css: globalVars });
+    insertStyle({ id: 'component-theme', css: componentStyles });
 ```
 
 ## 6. Referencia de Definición de Tipos (types.ts)
@@ -195,22 +195,22 @@ A continuación, se presenta un desglose técnico detallado para cada entidad ex
 * **Firma:** `element(target: ElementTarget): HTMLElementBuilder`
 * **Tutorial de Implementación:**
 ```typescript
-// Caso A: Instanciación mediante Cadena Emmet
-const btn = element('button.primary#submit-btn[type="submit"]{Enviar}').resume();
+    // Caso A: Instanciación mediante Cadena Emmet
+    const btn = element('button.primary#submit-btn[type="submit"]{Enviar}').resume();
 
-// Caso B: Decoración de Elemento Existente
-const existingNode = document.getElementById('app');
-if (existingNode) {
-    element(existingNode).addClass('initialized');
-}
+    // Caso B: Decoración de Elemento Existente
+    const existingNode = document.getElementById('app');
+    if (existingNode) {
+        element(existingNode).addClass('initialized');
+    }
 
-// Caso C: Composición Funcional
-const MyComponent = (h) => ({ 
-    tag: 'div', 
-    class: 'wrapper', 
-    children: [h.br, 'Texto'] 
-});
-element(MyComponent).resume();
+    // Caso C: Composición Funcional
+    const MyComponent = (h) => ({ 
+        tag: 'div', 
+        class: 'wrapper', 
+        children: [h.br, 'Texto'] 
+    });
+    element(MyComponent).resume();
 ```
 
 #### 9.1.2. StyleSingleton
@@ -219,14 +219,14 @@ element(MyComponent).resume();
 * **Interfaz:** `{ styles: Record<string, any>, add(id, css), update() }`
 * **Tutorial de Implementación:**
 ```typescript
-// Registro de un módulo de estilos
-StyleSingleton.add('modulo-navegacion', {
-    'nav': { display: 'flex', gap: 20 },
-    'nav a': { textDecoration: 'none' }
-});
+    // Registro de un módulo de estilos
+    StyleSingleton.add('modulo-navegacion', {
+        'nav': { display: 'flex', gap: 20 },
+        'nav a': { textDecoration: 'none' }
+    });
 
-// Nota: La invocación de .add() dispara automáticamente .update(),
-// regenerando el elemento <style id="fluid-ui"> en el head.
+    // Nota: La invocación de .add() dispara automáticamente .update(),
+    // regenerando el elemento <style id="fluid-ui"> en el head.
 ```
 
 ### 9.2. Referencia del Módulo Motor CSS (toCSS.ts)
@@ -302,19 +302,19 @@ const style = (h) => ({
 * **Sinopsis Técnica:** Funciones para la generación de cadenas de color conformes al estándar CSS Color Module 5.
 * **Tutorial de Implementación:**
 ```typescript
-// Colores Estándar
-const c1 = hsl(200, 50, 50); // "hsl(200, 50%, 50%)"
+    // Colores Estándar
+    const c1 = hsl(200, 50, 50); // "hsl(200, 50%, 50%)"
 
-// Colores Relativos (Sintaxis 'from')
-const c2 = hslFrom((c, u) => [
-    c.var('color-base'), // Origen
-    c.h,                 // Hue inalterado
-    c.mult(c.s, 0.8),    // Saturación reducida al 80%
-    c.l                  // Luminosidad inalterada
-]);
+    // Colores Relativos (Sintaxis 'from')
+    const c2 = hslFrom((c, u) => [
+        c.var('color-base'), // Origen
+        c.h,                 // Hue inalterado
+        c.mult(c.s, 0.8),    // Saturación reducida al 80%
+        c.l                  // Luminosidad inalterada
+    ]);
 
-// Esquema Claro/Oscuro
-const c3 = lightDark('black', 'white'); // "light-dark(black, white)"
+    // Esquema Claro/Oscuro
+    const c3 = lightDark('black', 'white'); // "light-dark(black, white)"
 ```
 
 #### 9.4.3. Lógica y Matemáticas (calc, cssVar, range)
@@ -322,14 +322,14 @@ const c3 = lightDark('black', 'white'); // "light-dark(black, white)"
 * **Sinopsis Técnica:** Abstracciones para operaciones lógicas en CSS y generación de secuencias en JS.
 * **Tutorial de Implementación:**
 ```typescript
-// Cálculo CSS
-const width = calc(c => c.sub('100vw', '20px')); // "calc(100vw - 20px)"
+    // Cálculo CSS
+    const width = calc(c => c.sub('100vw', '20px')); // "calc(100vw - 20px)"
 
-// Variables CSS Seguras
-const v = cssVar('spacing-sm', '10px'); // "var(--spacing-sm, 10px)"
+    // Variables CSS Seguras
+    const v = cssVar('spacing-sm', '10px'); // "var(--spacing-sm, 10px)"
 
-// Generación de Rangos (JS util)
-const steps = range(0, 100, 10); // [0, 10, 20, ..., 90]
+    // Generación de Rangos (JS util)
+    const steps = range(0, 100, 10); // [0, 10, 20, ..., 90]
 ```
 
 #### 9.4.4. Diseño Fluido (lerpcss)
@@ -337,12 +337,12 @@ const steps = range(0, 100, 10); // [0, 10, 20, ..., 90]
 * **Sinopsis Técnica:** Implementación de interpolación lineal para valores responsivos sin puntos de ruptura (breakpoints).
 * **Tutorial de Implementación:**
 ```typescript
-const responsiveFont = lerpcss({
-    min: 16, // Valor a viewport mínimo (400px default)
-    max: 24, // Valor a viewport máximo (1100px default)
-    unit: 'px' // Unidad de salida
-});
-// Retorna una expresión `clamp(...)` compleja.
+    const responsiveFont = lerpcss({
+        min: 16, // Valor a viewport mínimo (400px default)
+        max: 24, // Valor a viewport máximo (1100px default)
+        unit: 'px' // Unidad de salida
+    });
+    // Retorna una expresión `clamp(...)` compleja.
 ```
 
 #### 9.4.5. Propiedades Complejas (transform, transition, boxShadow, border)
@@ -369,8 +369,8 @@ const responsiveFont = lerpcss({
 * **Sinopsis Técnica:** Funciones auxiliares para el sufijado de unidades y construcción de cadenas de recursos.
 * **Tutorial de Implementación:**
 ```typescript
-const val1 = px(15);         // "15px"
-const val2 = rem(1.5);       // "1.5rem"
-const val3 = important(val1);// "15px !important"
-const res  = url('img.png'); // "url(\"img.png\")"
+    const val1 = px(15);         // "15px"
+    const val2 = rem(1.5);       // "1.5rem"
+    const val3 = important(val1);// "15px !important"
+    const res  = url('img.png'); // "url(\"img.png\")"
 ```

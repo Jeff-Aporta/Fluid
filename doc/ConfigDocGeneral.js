@@ -1,300 +1,201 @@
 // @ts-nocheck
-window.ConfigDocGeneral = {
-    search: {
-        maxAge: 86400000,
-        paths: 'auto',
-        placeholder: 'Buscar...',
-        noData: 'No se encontraron resultados',
-        depth: 6
-    },
-    zoom: {
-        selector: 'img:not(.emoji)',
-        background: '#0f172a',
-        scrollOffset: 0
-    },
-    mermaid: {
-        theme: 'dark',
-        securityLevel: 'loose',
-        flowchart: { defaultRenderer: 'elk' }
-    },
-    topMargin: 90,
-    progress: {
-        position: "top",
-        color: "var(--theme-color, #00FFCC)",
-        height: "3px",
-    },
-    plugins: [
-        function (hook, vm) {
-            // 2. Custom Scroll Spy for Sidebar
-            hook.doneEach(function () {
-                const sidebar = document.querySelector('.sidebar');
-                if (!sidebar) return;
+(() => {
+    /** 1. Imports y variables del módulo */
+    const { element, insertStyle, buildStyle } = window.FluidUI;
+    const regexId = /[?&]id=([^&]+)/ /** extrae id de url */;
 
-                let headerWrapper = sidebar.querySelector('.sidebar-header');
-                if (!headerWrapper) {
-                    headerWrapper = document.createElement('div');
-                    headerWrapper.className = 'sidebar-header';
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth >= 770) return;
+
+        const sidebar = document.querySelector('.sidebar');
+        const toggle = document.querySelector('.sidebar-toggle');
+
+        if (!sidebar || !toggle) return;
+
+        const clickedOutside = !sidebar.contains(e.target) && !toggle.contains(e.target);
+        const clickedLink = e.target.closest('a');
+
+        if (clickedOutside || clickedLink) {
+            document.body.classList.add('close');
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        if (window.innerWidth < 770) setTimeout(() => document.body.classList.add('close'), 10);
+    });
+
+    /** 2. Definición de Configuración */
+    window.ConfigDocGeneral = {
+        /** Buscador */ search: { maxAge: 86400000, paths: 'auto', placeholder: 'Buscar...', noData: 'No se encontraron resultados', depth: 6 },
+        /** Zoom */ zoom: { selector: 'img:not(.emoji)', background: '#0f172a', scrollOffset: 0 },
+        /** Mermaid */ mermaid: { theme: 'dark', securityLevel: 'loose', flowchart: { defaultRenderer: 'elk' } },
+        /** Estilos generales */ topMargin: 90, progress: buildStyle($ => ({ position: $.top, color: $.cssVar("theme-color", "#00FFCC"), height: $.px(3) })),
+        /** Plugins */ plugins: [
+            function (hook, vm) {
+                /** 1. Custom Scroll Spy for Sidebar */
+                hook.doneEach(function () {
+                    const sidebar = element('.sidebar', false);
+                    if (!sidebar) return;
+                    /** Header del sidebar */
+                    const headerWrapper = element('div.sidebar-header', true).resume();
                     sidebar.prepend(headerWrapper);
-                }
-
-                const title = sidebar.querySelector(':not(.sidebar-header) > h1');
-                const appNav = sidebar.querySelector(':not(.sidebar-header) > .app-nav');
-                const search = sidebar.querySelector(':not(.sidebar-header) > .search');
-
-                if (title) headerWrapper.appendChild(title);
-                if (appNav) headerWrapper.appendChild(appNav);
-                if (search) headerWrapper.appendChild(search);
-
-                if (sidebar.firstChild !== headerWrapper) {
-                    sidebar.prepend(headerWrapper);
-                }
-            });
-
-            // 2. Custom Scroll Spy (Active Link Highlighter)
-            hook.doneEach(function () {
-                const main = document.querySelector('.markdown-section');
-                const sidebar = document.querySelector('.sidebar');
-
-                if (!main || !sidebar) return;
-
-                let lastActiveId = '';
-
-                const updateActiveLink = () => {
-                    const headers = main.querySelectorAll('h1, h2, h3, h4, h5, h6');
-                    let currentId = '';
-                    let minDiff = Infinity;
-
-                    headers.forEach(header => {
-                        const rect = header.getBoundingClientRect();
-                        const diff = Math.abs(rect.top - 100);
-
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            currentId = header.getAttribute('id');
-                        }
+                    const title = sidebar.selectOne(':not(.sidebar-header) > h1');
+                    const appNav = sidebar.selectOne(':not(.sidebar-header) > .app-nav');
+                    const search = sidebar.selectOne(':not(.sidebar-header) > .search');
+                    title && headerWrapper.appendChild(title);
+                    appNav && headerWrapper.appendChild(appNav);
+                    search && headerWrapper.appendChild(search);
+                    /** Asegurar posición */
+                    if (sidebar.resume().firstChild !== headerWrapper) sidebar.prepend(headerWrapper);
+                    /** Comportamiento del Link App Name */
+                    const appLink = element('.app-name-link', false);
+                    appLink?.onclick((e) => {
+                        e.preventDefault();
+                        window.scrollTo(0, 0);
+                        const url = new URL(window.location);
+                        url.searchParams.delete('id');
+                        history.pushState(null, '', url);
                     });
-
-                    if (currentId && currentId !== lastActiveId) {
-                        lastActiveId = currentId;
-
-                        const allLinks = sidebar.querySelectorAll('li.active, a.active');
-                        allLinks.forEach(el => el.classList.remove('active'));
-
-                        const allSidebarLinks = Array.from(sidebar.querySelectorAll('a[href*="id="]'));
-                        const activeLink = allSidebarLinks.find(link => {
-                            const href = link.getAttribute('href');
-                            // Extract ID from href (e.g., "?id=section-id" or "file.md?id=section-id")
-                            const idMatch = href.match(/[?&]id=([^&]+)/);
-                            if (idMatch && idMatch[1]) {
-                                return decodeURIComponent(idMatch[1]) === decodeURIComponent(currentId);
-                            }
-                            return false;
+                });
+                /** 2. Active Link Highlighter */
+                hook.doneEach(function () {
+                    const [main, sidebar] = element(['.markdown-section', '.sidebar'], false);
+                    if (!main || !sidebar) return;
+                    let lastActiveId = '';
+                    const updateActiveLink = () => {
+                        const headers = main.selectAll('h1, h2, h3, h4, h5, h6');
+                        let currentId = '', minDiff = Infinity;
+                        /** Encontrar header más cercano */
+                        headers.forEach(header => {
+                            const diff = Math.abs(header.rect.top - 100);
+                            if (diff < minDiff) (minDiff = diff), (currentId = header.id());
                         });
-
-                        if (activeLink) {
-                            activeLink.classList.add('active');
-
-                            const sidebarRect = sidebar.getBoundingClientRect();
-                            const linkRect = activeLink.getBoundingClientRect();
-                            const header = sidebar.querySelector('.sidebar-header');
-                            const headerOffset = header ? header.offsetHeight : 0;
-                            const bottomOffset = 20;
-
-                            const isOutOfView = linkRect.top < (sidebarRect.top + headerOffset) || linkRect.bottom > (sidebarRect.bottom - bottomOffset);
-
-                            if (isOutOfView) {
-                                const visibleCenter = (sidebar.clientHeight - headerOffset) / 2 + headerOffset;
-                                const scrollAmount = (linkRect.top - sidebarRect.top) - visibleCenter + (linkRect.height / 2);
-                                sidebar.scrollTop += scrollAmount;
+                        /** Actualizar si cambió */
+                        if (currentId && currentId !== lastActiveId) {
+                            lastActiveId = currentId;
+                            /** Limpiar activos previos */
+                            sidebar.selectAll('li.active, a.active').forEach(el => el.removeClass('active'));
+                            /** Buscar link activo */
+                            const activeLink = sidebar.selectAll('a[href*="id="]').find(link => {
+                                const idMatch = link.attr('href').match(regexId);
+                                return idMatch && idMatch[1] && decodeURIComponent(idMatch[1]) === decodeURIComponent(currentId);
+                            });
+                            if (activeLink) {
+                                activeLink.addClass('active');
+                                /** Actualizar URL */
+                                const url = new URL(window.location);
+                                url.searchParams.set('id', currentId);
+                                history.replaceState(null, '', url);
+                                /** Scroll Sidebar si es necesario */
+                                const headerOffset = sidebar.selectOne('.sidebar-header')?.offsetHeight || 0;
+                                const linkRect = activeLink.rect;
+                                const sidebarRect = sidebar.rect;
+                                const bottomOffset = 20;
+                                const isOutOfView = linkRect.top < (sidebarRect.top + headerOffset) || linkRect.bottom > (sidebarRect.bottom - bottomOffset);
+                                if (isOutOfView) {
+                                    const visibleCenter = (sidebar.height - headerOffset) / 2 + headerOffset;
+                                    const scrollAmount = (linkRect.top - sidebarRect.top) - visibleCenter + (linkRect.height / 2);
+                                    sidebar.scrollY += scrollAmount;
+                                }
+                                /** Activar padre LI */
+                                activeLink.closest('li')?.addClass('active');
                             }
-
-                            const parentLi = activeLink.closest('li');
-                            if (parentLi) parentLi.classList.add('active');
                         }
-                    }
-                };
-
-                window.addEventListener('scroll', updateActiveLink);
-                setTimeout(updateActiveLink, 100);
-            });
-
-            // 3. CodeMirror Integration
-            hook.doneEach(function () {
-                const codeBlocks = document.querySelectorAll('pre[data-lang]');
-                codeBlocks.forEach((block) => {
-                    if (block.nextElementSibling && block.nextElementSibling.classList.contains('CodeMirror')) return;
-
-                    const code = block.querySelector('code');
-                    if (!code) return;
-
-                    const lang = block.getAttribute('data-lang');
-                    const content = code.textContent;
-
-                    const modeMap = {
-                        'js': 'javascript', 'javascript': 'javascript', 'json': 'json',
-                        'ts': 'javascript', 'typescript': 'javascript', 'html': 'htmlmixed',
-                        'css': 'css', 'xml': 'xml', 'sql': 'sql', 'markdown': 'markdown',
-                        'md': 'markdown', 'yaml': 'yaml', 'yml': 'yaml',
-                        'csharp': 'clike', 'cs': 'clike', 'java': 'clike', 'cpp': 'clike'
                     };
-
-                    const mode = modeMap[lang] || 'text/plain';
-                    const editorContainer = document.createElement('div');
-                    block.parentNode.insertBefore(editorContainer, block);
-                    block.style.display = 'none';
-
-                    CodeMirror(editorContainer, {
-                        value: content,
-                        mode: mode,
-                        theme: 'vscode-dark',
-                        lineNumbers: true,
-                        readOnly: true,
-                        lineWrapping: true
+                    window.addEventListener('scroll', updateActiveLink);
+                    setTimeout(updateActiveLink, 100);
+                });
+                /** 3. CodeMirror Integration */
+                hook.doneEach(function () {
+                    document.querySelectorAll('pre[data-lang]').forEach((block) => {
+                        if (block.nextElementSibling?.classList.contains('CodeMirror')) return;
+                        const code = block.querySelector('code');
+                        if (!code) return;
+                        const lang = block.getAttribute('data-lang');
+                        const modeMap = { js: 'javascript', javascript: 'javascript', json: 'json', ts: 'javascript', typescript: 'javascript', html: 'htmlmixed', css: 'css', xml: 'xml', sql: 'sql', markdown: 'markdown', md: 'markdown', yaml: 'yaml', yml: 'yaml', csharp: 'clike', cs: 'clike', java: 'clike', cpp: 'clike' };
+                        const editorContainer = document.createElement('div');
+                        block.parentNode.insertBefore(editorContainer, block);
+                        block.style.display = 'none';
+                        CodeMirror(editorContainer, { value: code.textContent, mode: modeMap[lang] || 'text/plain', theme: 'vscode-dark', lineNumbers: true, readOnly: true, lineWrapping: true });
                     });
                 });
-            });
-
-            // 4. Graphviz & Mermaid Rendering Plugin
-            hook.afterEach(function (html, next) {
-                const container = document.createElement('div');
-                container.innerHTML = html;
-
-                // Helper to replace block with wrapper
-                function createWrapper(block, svgUrl, pngUrl) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = "graphviz-wrapper";
-                    wrapper.dataset.src = svgUrl;
-                    wrapper.dataset.png = pngUrl;
-                    wrapper.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">Cargando diagrama...</div>';
-                    block.parentNode.replaceChild(wrapper, block);
-                }
-
-                // Process DOT blocks
-                container.querySelectorAll('pre[data-lang="dot"]').forEach(block => {
-                    const code = block.textContent;
-                    const svgUrl = `https://quickchart.io/graphviz?format=svg&graph=${encodeURIComponent(code)}`;
-                    const pngUrl = svgUrl;
-                    createWrapper(block, svgUrl, pngUrl);
+                /** 4. Graphviz & Mermaid Rendering Plugin */
+                hook.afterEach(function (html, next) {
+                    const container = document.createElement('div');
+                    container.innerHTML = html;
+                    const createWrapper = (block, svgUrl, pngUrl) => {
+                        const wrapper = element('div.graphviz-wrapper');
+                        wrapper.dataset({ src: svgUrl, png: pngUrl });
+                        wrapper.html(element('div').style({ textAlign: 'center', padding: '20px', color: '#666' }).text('Cargando diagrama...').html(undefined, true));
+                        block.parentNode.replaceChild(wrapper.resume(), block);
+                    };
+                    container.querySelectorAll('pre[data-lang="dot"]').forEach(block => {
+                        const svgUrl = `https://quickchart.io/graphviz?format=svg&graph=${encodeURIComponent(block.textContent)}`;
+                        createWrapper(block, svgUrl, svgUrl);
+                    });
+                    next(container.innerHTML);
                 });
-
-                // Process Mermaid blocks - REMOVED to use docsify-mermaid plugin locally
-                // container.querySelectorAll('pre[data-lang="mermaid"]').forEach(block => { ... });
-
-                next(container.innerHTML);
-            });
-
-            hook.doneEach(function () {
-                // Shared Zoom Setup Function
-                const setupZoom = (container, svg) => {
-                    // Check if overlay already exists to prevent duplicates
-                    if (!container || !svg || container.querySelector('.zoom-overlay')) return;
-
-                    container.dataset.zoomAttached = "true";
-                    container.style.position = 'relative';
-                    container.style.display = 'inline-block';
-                    container.style.width = '100%';
-
-                    svg.style.maxWidth = '100%';
-                    svg.style.height = 'auto';
-
-                    if (window.mediumZoom) {
-                        const img = document.createElement('img');
-                        img.classList.add('zoom-overlay');
-
-                        // Overlay styles
-                        Object.assign(img.style, {
-                            position: 'absolute',
-                            top: '0',
-                            left: '0',
-                            width: '100%',
-                            height: '100%',
-                            opacity: '0',
-                            cursor: 'zoom-in',
-                            zIndex: '10'
-                        });
-
-                        container.appendChild(img);
-
-                        // Initial zoom instance
-                        const zoom = window.mediumZoom(img, { background: '#0f172a' });
-
-                        img.addEventListener('click', (e) => {
-                            // e.stopPropagation(); // Removed to allow zoom-loupe.js to detect the click
-
-                            // Refresh Image Source from CURRENT SVG
-                            const currentSvg = container.querySelector('svg');
-                            if (currentSvg) {
-                                const svgCode = currentSvg.outerHTML;
-                                const encodedSvg = encodeURIComponent(svgCode);
-                                const dataUri = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
-
-                                // Only update if changed
-                                if (img.src !== dataUri) {
-                                    img.src = dataUri;
+                hook.doneEach(function () {
+                    /** Configurar Zoom Compartido */
+                    const setupZoom = (containerTarget, svgTarget) => {
+                        const [container, svg] = element([containerTarget, svgTarget]);
+                        if (!container || !svg || container.selectOne('.zoom-overlay')) return;
+                        /** Estilos Globales */
+                        insertStyle({ id: 'zoom-overlay-styles', css: buildStyle($ => ({ '.zoom-overlay': { position: $.absolute, top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'zoom-in', zIndex: 10 } })) });
+                        /** Configuración de Contenedor y SVG */
+                        container.style($ => ({ position: $.relative, display: $.inlineBlock, width: $.percent(100) })).dataset({ zoomAttached: true });
+                        svg.style($ => ({ maxWidth: $.percent(100), height: $.auto }));
+                        /** Overlay y Lógica de Zoom */
+                        if (window.mediumZoom) {
+                            const imgBuilder = element('img.zoom-overlay');
+                            container.appendChild(imgBuilder);
+                            const img = imgBuilder.resume();
+                            const zoom = window.mediumZoom(img, { background: '#0f172a' });
+                            imgBuilder.onclick((e) => {
+                                if (e.pointerType === 'touch') return;
+                                const currentSvg = container.selectOne('svg');
+                                if (currentSvg) {
+                                    const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(currentSvg.outerHTML)}`;
+                                    if (img.src !== dataUri) img.src = dataUri;
                                 }
-                            }
-
-                            // Open zoom
-                            img.style.opacity = '1';
-                            zoom.open();
-
-                            // Force Loupe Update (wait for zoom-loupe.js 300ms delay)
-                            setTimeout(() => {
-                                const loupe = document.querySelector('.fluid-loupe');
-                                if (loupe) {
-                                    loupe.style.backgroundImage = `url("${img.src}")`;
-                                }
-                            }, 350);
-                        });
-
-                        zoom.on('closed', () => {
-                            img.style.opacity = '0';
-                        });
-                    }
-                };
-
-                // Graphviz Logic
-                const graphs = document.querySelectorAll('.graphviz-wrapper');
-                graphs.forEach(div => {
-                    if (div.dataset.loaded) return;
-                    const url = div.dataset.src;
-
-                    if (url) {
-                        fetch(url)
-                            .then(res => res.text())
-                            .then(svgContent => {
+                                imgBuilder.style({ opacity: '1' });
+                                zoom.open();
+                                setTimeout(() => { try { element('.fluid-loupe', false).style({ backgroundImage: `url("${img.src}")` }); } catch (e) { } }, 350);
+                            });
+                            zoom.on('closed', () => imgBuilder.style({ opacity: '0' }));
+                        }
+                    };
+                    /** Lógica Graphviz */
+                    document.querySelectorAll('.graphviz-wrapper').forEach(rawDiv => {
+                        const div = element(rawDiv);
+                        if (div.getDataset('loaded')) return;
+                        const url = div.getDataset('src');
+                        if (url) {
+                            fetch(url).then(res => res.text()).then(svgContent => {
                                 div.innerHTML = svgContent;
-                                div.dataset.loaded = "true";
-                                const svgEl = div.querySelector('svg');
-                                if (svgEl) {
-                                    setupZoom(div, svgEl);
-                                }
-                            })
-                            .catch(err => {
-                                div.innerHTML = '<div style="color:red">Error cargando diagrama</div>';
+                                div.dataset('loaded', true);
+                                const svgEl = div.selectOne('svg');
+                                svgEl && setupZoom(div, svgEl);
+                            }).catch(err => {
+                                div.innerHTML = element('div').style({ color: 'red' }).text('Error cargando diagrama').html();
                                 console.error(err);
                             });
-                    }
-                });
-
-                // Mermaid Zoom Logic (Async handling)
-                const processMermaidZoom = () => {
-                    const mermaidDivs = document.querySelectorAll('.mermaid');
-                    mermaidDivs.forEach(div => {
-                        const svg = div.querySelector('svg');
-                        const overlay = div.querySelector('.zoom-overlay');
-                        // If SVG exists but no overlay (or overlay was wiped), setup zoom
-                        if (svg && !overlay) {
-                            setupZoom(div, svg);
                         }
                     });
-                };
+                    /** Lógica Mermaid Zoom */
+                    const processMermaidZoom = () => {
+                        document.querySelectorAll('.mermaid').forEach(div => {
+                            const svg = div.querySelector('svg');
+                            const overlay = div.querySelector('.zoom-overlay');
+                            if (svg && !overlay) setupZoom(div, svg);
+                        });
+                    };
+                    processMermaidZoom();
+                    setTimeout(processMermaidZoom, 500);
+                    setTimeout(processMermaidZoom, 1500);
+                });
 
-                // Attempt immediately and retry for async rendering
-                processMermaidZoom();
-                setTimeout(processMermaidZoom, 500);
-                setTimeout(processMermaidZoom, 1500);
-            });
-        }
-    ]
-};
+            }
+        ]
+    };
+})();

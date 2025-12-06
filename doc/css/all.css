@@ -73,9 +73,7 @@ body {
             margin-right: 0;
         }
 
-        .content {
-            /* No extra margin adjustment needed for flex */
-        }
+
     }
 }
 
