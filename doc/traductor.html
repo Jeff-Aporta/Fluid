@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Traductor CSS a Fluid JS</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="Traductor de CSS a Fluid UI JS">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:title" content="Traductor CSS a Fluid JS">
+    <meta property="og:description"
+        content="Herramienta para traducir código CSS estandar a objetos JS compatibles con Fluid UI.">
+    <meta property="og:image" content="./doc/assets/logo.png">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Traductor CSS a Fluid JS">
+    <meta name="twitter:description"
+        content="Herramienta para traducir código CSS estandar a objetos JS compatibles con Fluid UI.">
+    <meta name="twitter:image" content="./doc/assets/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="icon" href="./doc/assets/logo.png" type="image/png">
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css" />
+
+    <!-- Fluid UI & Styles -->
+    <script src="../js/fluid.js" defer></script>
+
+    <!-- CodeMirror Main Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js" defer></script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js" defer></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" defer></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js" defer></script>
+
+    <script type="text/babel" data-presets="env,react,typescript" src="./traductor.tsx" defer></script>
+</head>
+
+<body>
+    <div id="root"></div>
+</body>
+
+</html>

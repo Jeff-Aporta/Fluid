@@ -10,6 +10,13 @@ const visualizadorDiferencia = ({ obtenida, esperada }: { obtenida: string, espe
     let j = 0;
     while (j < obtenida.length && j < esperada.length && obtenida[j] === esperada[j]) j++;
 
+    const diffMsg = `Diferencia en índice ${j}:
+Obtenida: ...${obtenida.slice(Math.max(0, j - 50), j + 50)}...
+Esperada: ...${esperada.slice(Math.max(0, j - 50), j + 50)}...
+Length: ${obtenida.length} vs ${esperada.length}
+`;
+    fs.writeFileSync("debug_diff.txt", diffMsg);
+
     console.log(`\nDiferencia en índice ${j}: `);
     console.log(`Obtenida: ...${obtenida.slice(Math.max(0, j - 20), j + 20)}...`);
     console.log(`Esperada: ...${esperada.slice(Math.max(0, j - 20), j + 20)}...`);
@@ -47,6 +54,8 @@ const procesadorCaso = ({ archivoCss }: { archivoCss: string }) => {
 
                 if (currentJSNorm !== previousJS) {
                     console.error(`❌ CASO ${nombreBase} (ITERACIÓN ${i}) FALLIDO: Inestable.`);
+                    fs.writeFileSync("debug_unstable_obtenida.txt", currentJSNorm);
+                    fs.writeFileSync("debug_unstable_esperada.txt", previousJS);
                     visualizadorDiferencia({ obtenida: currentJSNorm, esperada: previousJS });
                     stable = false;
                     break;
@@ -66,6 +75,8 @@ const procesadorCaso = ({ archivoCss }: { archivoCss: string }) => {
         }
 
         console.error(`❌ CASO ${nombreBase} FALLIDO: La salida no coincide.`);
+        fs.writeFileSync("debug_obtenida.txt", salidaNorm);
+        fs.writeFileSync("debug_esperada.txt", esperadaNorm);
         visualizadorDiferencia({ obtenida: salidaNorm, esperada: esperadaNorm });
         return false;
     } catch (error) {
@@ -74,4 +85,4 @@ const procesadorCaso = ({ archivoCss }: { archivoCss: string }) => {
     }
 }
 
-procesadorCaso({ archivoCss: "02-background.css" });
+procesadorCaso({ archivoCss: "test.css" });

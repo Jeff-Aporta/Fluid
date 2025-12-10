@@ -5,6 +5,7 @@ import type { InsertStyleInput } from "./types"
 /** 6. Funciones Estándar y Clases */
 /** Inserta o actualiza estilos en el DOM */
 export function insertStyle(opt: InsertStyleInput): HTMLStyleElement {
+  if (typeof document === "undefined") return {} as any;
   if (typeof opt === "string") return insertStyle({ css: opt })
   let { style, id, clases = [], css, ...rest } = opt
   css = buildStyle(css)

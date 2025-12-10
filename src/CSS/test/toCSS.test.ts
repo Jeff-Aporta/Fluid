@@ -95,6 +95,30 @@ export const runToCSSTests = () => {
             console.log("✅ Prueba 6 Pasó");
         }
 
+        // Test 7: CamelCase Property Conversion
+        console.log("🔹 Prueba 7: CamelCase Property Conversion...");
+        const css7 = toCSS({
+            ".test-camel": {
+                borderRight: "1px solid red",
+                boxShadow: "none",
+                marginTop: "10px",
+                zIndex: 100
+            }
+        });
+        const passed7 =
+            css7.includes("border-right: 1px solid red;") &&
+            css7.includes("box-shadow: none;") &&
+            css7.includes("margin-top: 10px;") &&
+            css7.includes("z-index: 100;");
+
+        if (!passed7) {
+            console.error("❌ Falló Prueba 7");
+            console.log("Obtenido raw:", css7);
+            passed = false;
+        } else {
+            console.log("✅ Prueba 7 Pasó");
+        }
+
     } catch (e) {
         console.error("❌ Error ejecutando pruebas:", e);
         passed = false;

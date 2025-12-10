@@ -24,7 +24,18 @@ export function toCSS(options: ToCSSOptions | ((helpers: THelpers) => ToCSSOptio
   const { inferir = true, decimalesInferencia = 3, clasesKebab = true, profundidad = 0, vars, initheader, pretty = false, ...mapaCss } = resolvedOptions
   const mapa: Record<string, TStrNum | boolean> = {}
 
-  if (vars) Object.entries(vars).forEach(([k, v]) => v !== undefined && (mapa[`--${k.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`] = Array.isArray(v) ? (v.length > 1 ? `var(${v[0]}, ${v[1]})` : String(v[0])) : String(v)))
+  if (vars) Object.entries(vars).forEach(([k, v]) => {
+    if (v === undefined) return
+    const varName = `--${k.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`
+    if (Array.isArray(v)) { mapa[varName] = v.length > 1 ? `var(${v[0]}, ${v[1]})` : String(v[0]); return }
+    if (typeof v === "object" && v !== null) {
+      const isShadow = "dY" in v || "dX" in v || "blur" in v || "spread" in v || "color" in v
+      if (isShadow) { mapa[varName] = HELPERS.boxShadow(v as any); return }
+      const isBorder = "width" in v || "style" in v || ("color" in v && !("blur" in v))
+      if (isBorder) { mapa[varName] = HELPERS.border(v as any); return }
+    }
+    mapa[varName] = String(v)
+  })
 
   Object.entries(mapaCss).forEach(([selOrig, val]) => {
     let sel: string = selOrig
@@ -36,18 +47,65 @@ export function toCSS(options: ToCSSOptions | ((helpers: THelpers) => ToCSSOptio
     const esClase = sel.startsWith("."), esId = sel.startsWith("#"), esDec = sel.startsWith("@"), esVar = sel.startsWith("--")
 
     if (!esClase && !esId && !esDec && !sel.includes(",") && !esHTML) {
-      let kebab = !esObj ? sel.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`) : sel
+      let kebab = sel.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)
       if (kebab.startsWith("webkit-") || kebab.startsWith("moz-")) kebab = `-${kebab}`
-      clasesKebab && sel !== kebab && (sel = esObj ? `.${kebab}` : kebab)
+      sel = kebab
     }
 
+    // Handle special objects (boxShadow, border) BEFORE treating as nested selector
     if (esObj) {
+      const camelSel = selOrig.replace(/-./g, m => m[1].toUpperCase())
+      const obj = val as Record<string, unknown>
+      const isShadow = camelSel === "boxShadow" && ("dY" in obj || "dX" in obj || "blur" in obj || "spread" in obj || "color" in obj || "inset" in obj)
+      const isBorder = (camelSel === "border" || camelSel.startsWith("border")) && ("width" in obj || "style" in obj || ("color" in obj && !("blur" in obj)))
+
+      if (isShadow) {
+        // Enforce kebab-case for property name, avoiding class .prefix
+        const prop = selOrig.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)
+        mapa[prop] = HELPERS.boxShadow(val as any)
+        return
+      }
+      if (isBorder) {
+        const prop = selOrig.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)
+        mapa[prop] = HELPERS.border(val as any)
+        return
+      }
+
       mapa[sel] = fmtJSON(toCSS({ profundidad: profundidad + 1, inferir, decimalesInferencia, clasesKebab, pretty, ...val as TMapaCSS }), pretty)
       return
     }
 
     const esNum = typeof val === "number", noInferir = !CSS_ATTRS_NUMBER.includes(sel) && !esVar
     if (inferir && esNum && noInferir) { mapa[sel] = `${parseFloat((val as number).toFixed(decimalesInferencia))}px`; return }
+
+    // Inferencia de helpers homónimos
+    if (inferir && (Array.isArray(val) || (typeof val === "object" && val !== null))) {
+      let helperName = sel.replace(/-./g, m => m[1].toUpperCase())
+      if (helperName === "backdropFilter") helperName = "filter"
+      if (helperName.startsWith("border")) helperName = "border"
+
+      const helper = HELPERS[helperName as keyof typeof HELPERS]
+      if (typeof helper === "function") {
+        // @ts-ignore
+        const res = Array.isArray(val) ? helper(...val) : helper(val)
+        // Si el helper devuelve un objeto (ej: transform), resolverlo si tiene toString/resolve, o dejarlo para recursión si es TObject
+        if (typeof res === "object" && res !== null && "resolve" in res) {
+          mapa[sel] = (res as any).resolve()
+          return
+        }
+        // Si devuelve string, asignarlo
+        if (typeof res === "string") {
+          mapa[sel] = res
+          return
+        }
+        // Si devuelve builder (como transform), llamar .str() si existe
+        if (res && typeof (res as any).str === "function") {
+          mapa[sel] = (res as any).str()
+          return
+        }
+      }
+    }
+
     mapa[sel] = val as TStrNum | boolean
   })
 

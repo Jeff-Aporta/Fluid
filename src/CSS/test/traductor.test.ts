@@ -1,3 +1,7 @@
+/**
+ cd "C:\Users\JAGUDELOE\Documents\Contapyme\ContaPymeU\ISW-ContaPymeU"
+ npx -y tsx src/components/ui/utilidades/fluid/src/CSS/test/traductor.test.ts 
+*/
 import { traductor, translateToCSS } from "../traductor";
 import { runToCSSTests } from "./toCSS.test";
 import * as fs from "fs";

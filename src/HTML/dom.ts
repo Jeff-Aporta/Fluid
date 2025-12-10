@@ -215,5 +215,22 @@ export const StyleSingleton = {
         this.styles[id] = css
         this.update()
     },
-    update() { insertStyle({ id: "fluid-ui", css: toCSS(Object.values(this.styles).reduce((acc, val) => ({ ...acc, ...val }), {})) }) }
+    update() {
+        const deepMerge = (t: any, s: any): any => {
+            const o = (v: any) => v && typeof v === 'object' && !Array.isArray(v)
+            if (!o(t) || !o(s)) return s
+            const res = { ...t }
+            Object.keys(s).forEach(k => { res[k] = o(t[k]) && o(s[k]) ? deepMerge(t[k], s[k]) : s[k] })
+            return res
+        }
+        insertStyle({ id: "fluid-ui-singleton", css: toCSS(Object.values(this.styles).reduce((acc, val) => deepMerge(acc, val), {})) })
+    }
+}
+
+const updateVars = () => StyleSingleton.add("variables", ($: typeof CSS_HELPERS) => ({ ":root": { vars: { windowWidth: $.px(window.innerWidth), windowHeight: $.px(window.innerHeight) } } }))
+
+if (typeof window !== "undefined") {
+    window.addEventListener("resize", updateVars)
+    document.addEventListener("DOMContentLoaded", updateVars)
+    updateVars()
 }

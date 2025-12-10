@@ -8,14 +8,16 @@
     <meta name="description" content="Documentación detallada de la utilidad Fluid">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-tabs@1/dist/docsify-tabs.min.css">
-
     <!-- CodeMirror CSS (Loaded after CDN to override defaults) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" />
     <!-- Fluid UI & Styles -->
     <script src="js/fluid.js"></script>
 
     <!-- CodeMirror Main Library -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
@@ -29,6 +31,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/meta.min.js"></script>
+
+    <script src="./doc/ConfigDocGeneral.js"></script>
+    <script src="./doc/styles.js" type="module"></script>
+
 
     <script>
         window.$docsify = {
@@ -46,42 +52,28 @@
                 '/p-dom.md': 'doc/md/p-dom.md',
                 '/p-helpers.md': 'doc/md/p-helpers.md'
             },
+            tabs: {
+                persist: true,
+                sync: true,
+                theme: 'classic',
+                tabComments: true,
+                tabHeadings: true
+            },
             ...(window.ConfigDocGeneral || {}),
         }
     </script>
-    <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'dark',
-            securityLevel: 'loose',
-            flowchart: { defaultRenderer: 'elk' }
-        });
-        window.mermaid = mermaid;
-    </script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="./doc/ConfigDocGeneral.js"></script>
-    <script src="./doc/style-base.js"></script>
-    <script src="./doc/style-codemirror.js"></script>
-    <script src="./doc/style-components.js"></script>
-    <script src="./doc/style-layout.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js" defer></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/docsify@4" defer></script>
     <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js" defer></script>
     <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js" defer></script>
     <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/copy-code.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify-progress@latest/dist/progress.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/docsify-tabs@1" defer></script>
-    <script src="//unpkg.com/docsify-mermaid@2.0.1/dist/docsify-mermaid.js" defer></script>
-    <script src="./doc/zoom-loupe.js" defer></script>
 </head>
 
 <body>
-
     <div id="app"></div>
-
     <footer class="app-footer">
         <span class="creator-info">Jeffrey Agudelo</span>
         <div class="social-links">
@@ -93,9 +85,6 @@
             </a>
         </div>
     </footer>
-
-
-
 </body>
 
 </html>

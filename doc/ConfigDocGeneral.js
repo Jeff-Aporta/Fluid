@@ -24,6 +24,13 @@
         if (window.innerWidth < 770) setTimeout(() => document.body.classList.add('close'), 10);
     });
 
+    /** Cierre de diálogos al dar click en backdrop */
+    document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'DIALOG' && e.target.classList.contains('fluid-dialog')) {
+            e.target.close();
+        }
+    });
+
     /** 2. Definición de Configuración */
     window.ConfigDocGeneral = {
         /** Buscador */ search: { maxAge: 86400000, paths: 'auto', placeholder: 'Buscar...', noData: 'No se encontraron resultados', depth: 6 },
@@ -52,16 +59,15 @@
                     appLink?.onclick((e) => {
                         e.preventDefault();
                         window.scrollTo(0, 0);
-                        const url = new URL(window.location);
-                        url.searchParams.delete('id');
-                        history.pushState(null, '', url);
                     });
-                });
-                /** 2. Active Link Highlighter */
-                hook.doneEach(function () {
-                    const [main, sidebar] = element(['.markdown-section', '.sidebar'], false);
-                    if (!main || !sidebar) return;
+
+                    /** Scroll Spy Logic */
+                    const [main, sidebarEl] = element(['.markdown-section', '.sidebar'], false);
+                    if (!main || !sidebarEl) return;
+
                     let lastActiveId = '';
+                    const startTime = Date.now();
+
                     const updateActiveLink = () => {
                         const headers = main.selectAll('h1, h2, h3, h4, h5, h6');
                         let currentId = '', minDiff = Infinity;
@@ -72,40 +78,64 @@
                         });
                         /** Actualizar si cambió */
                         if (currentId && currentId !== lastActiveId) {
-                            lastActiveId = currentId;
                             /** Limpiar activos previos */
-                            sidebar.selectAll('li.active, a.active').forEach(el => el.removeClass('active'));
+                            sidebarEl.selectAll('li.active, a.active').forEach(el => el.removeClass('active'));
                             /** Buscar link activo */
-                            const activeLink = sidebar.selectAll('a[href*="id="]').find(link => {
-                                const idMatch = link.attr('href').match(regexId);
-                                return idMatch && idMatch[1] && decodeURIComponent(idMatch[1]) === decodeURIComponent(currentId);
+                            const activeLink = sidebarEl.selectAll('a').find(link => {
+                                const href = link.attr('href');
+                                const idMatch = href && href.match(regexId);
+                                return idMatch && idMatch[1] && ([currentId, lastActiveId].some(id => decodeURIComponent(idMatch[1]) === decodeURIComponent(id)));
                             });
+
+                    
+
                             if (activeLink) {
                                 activeLink.addClass('active');
-                                /** Actualizar URL */
-                                const url = new URL(window.location);
-                                url.searchParams.set('id', currentId);
-                                history.replaceState(null, '', url);
-                                /** Scroll Sidebar si es necesario */
-                                const headerOffset = sidebar.selectOne('.sidebar-header')?.offsetHeight || 0;
-                                const linkRect = activeLink.rect;
-                                const sidebarRect = sidebar.rect;
-                                const bottomOffset = 20;
-                                const isOutOfView = linkRect.top < (sidebarRect.top + headerOffset) || linkRect.bottom > (sidebarRect.bottom - bottomOffset);
-                                if (isOutOfView) {
-                                    const visibleCenter = (sidebar.height - headerOffset) / 2 + headerOffset;
-                                    const scrollAmount = (linkRect.top - sidebarRect.top) - visibleCenter + (linkRect.height / 2);
-                                    sidebar.scrollY += scrollAmount;
+                                lastActiveId = currentId;
+
+                                /** Activar todos los padres LI para mantener árbol abierto */
+                                let parent = activeLink.resume().parentElement;
+                                const sidebarNode = sidebarEl.resume();
+                                while (parent && parent !== sidebarNode) {
+                                    if (parent.tagName === 'LI') parent.classList.add('active');
+                                    parent = parent.parentElement;
                                 }
-                                /** Activar padre LI */
-                                activeLink.closest('li')?.addClass('active');
+
+                                /** Actualizar URL (Hash Strategy compatible con Docsify) */
+                                if ((Date.now() - startTime > 1000)) {
+                                    const newHash = `/?id=${currentId}`;
+                                    if (window.location.hash !== `#${newHash}`) {
+                                        history.replaceState(null, '', `#${newHash}`);
+                                    }
+                                }
+
+
+
+                                /** Scroll Sidebar (Estrategia Block Center - Sidebar Only) */
+                                const sidebarRaw = sidebarEl.resume();
+                                const linkRaw = activeLink.resume();
+                                // --- Scroll Centering Logic (Fixed) ---
+                                
+                                if (sidebarRaw && linkRaw) {
+                                    const sidebarRect = sidebarRaw.getBoundingClientRect();
+                                    const linkRect = linkRaw.getBoundingClientRect();
+
+                                    // Calculate center alignment offset
+                                    const sidebarCenter = sidebarRect.top + (sidebarRect.height / 2);
+                                    const linkCenter = linkRect.top + (linkRect.height / 2);
+                                    const offset = linkCenter - sidebarCenter;
+
+                                    // Apply offset to ensure centering
+                                    sidebarRaw.scrollBy({ top: offset, behavior: 'smooth' });
+                                }
                             }
                         }
                     };
                     window.addEventListener('scroll', updateActiveLink);
                     setTimeout(updateActiveLink, 100);
                 });
-                /** 3. CodeMirror Integration */
+
+                /** 2. CodeMirror Integration */
                 hook.doneEach(function () {
                     document.querySelectorAll('pre[data-lang]').forEach((block) => {
                         if (block.nextElementSibling?.classList.contains('CodeMirror')) return;
@@ -119,24 +149,182 @@
                         CodeMirror(editorContainer, { value: code.textContent, mode: modeMap[lang] || 'text/plain', theme: 'vscode-dark', lineNumbers: true, readOnly: true, lineWrapping: true });
                     });
                 });
-                /** 4. Graphviz & Mermaid Rendering Plugin */
+
+                /** 3. Custom Tabs & Diagram Rendering Plugin */
                 hook.afterEach(function (html, next) {
                     const container = document.createElement('div');
                     container.innerHTML = html;
+
+                    /** A. Process Custom Tabs (<!-- tabs:start -->) */
+                    const iterateNodes = (parent) => {
+                        let currentNode = parent.firstChild;
+                        let inTabBlock = false;
+                        let tabBlockNodes = [];
+                        let startCommentNode = null;
+
+                        while (currentNode) {
+                            const nextNode = currentNode.nextSibling;
+                            if (currentNode.nodeType === 8 && currentNode.textContent.trim() === 'tabs:start') {
+                                inTabBlock = true; tabBlockNodes = []; startCommentNode = currentNode;
+                            } else if (currentNode.nodeType === 8 && currentNode.textContent.trim() === 'tabs:end') {
+                                if (inTabBlock && startCommentNode) {
+                                    const tabsContainer = document.createElement('div'); tabsContainer.className = 'fluid-tabs';
+                                    const headerContainer = document.createElement('div'); headerContainer.className = 'fluid-tabs-header';
+                                    const contentContainer = document.createElement('div'); contentContainer.className = 'fluid-tabs-content';
+                                    let currentTabContent = null; let firstTab = true;
+
+                                    tabBlockNodes.forEach(node => {
+                                        if (node.tagName && /^H[1-6]$/.test(node.tagName)) {
+                                            const title = node.textContent; const tabId = 'tab-' + Math.random().toString(36).substr(2, 9);
+                                            const btn = document.createElement('button'); btn.className = 'fluid-tab-btn' + (firstTab ? ' active' : '');
+                                            btn.textContent = title; btn.setAttribute('data-tab-target', tabId); headerContainer.appendChild(btn);
+
+                                            currentTabContent = document.createElement('div');
+                                            // FORCE DISPLAY BLOCK FOR ACTIVE TAB INLINE STYLE TO OVERRIDE ANY CSS ISSUES
+                                            currentTabContent.className = 'fluid-tab-panel' + (firstTab ? ' active' : '');
+                                            if (firstTab) currentTabContent.style.display = 'block';
+                                            currentTabContent.setAttribute('data-tab-content', tabId); contentContainer.appendChild(currentTabContent);
+                                            firstTab = false;
+                                        } else {
+                                            if (currentTabContent) currentTabContent.appendChild(node.cloneNode(true));
+                                        }
+                                    });
+                                    tabsContainer.appendChild(headerContainer); tabsContainer.appendChild(contentContainer);
+                                    parent.insertBefore(tabsContainer, startCommentNode);
+                                    parent.removeChild(startCommentNode); tabBlockNodes.forEach(n => parent.removeChild(n)); parent.removeChild(currentNode);
+                                    inTabBlock = false;
+                                }
+                            } else if (inTabBlock) { tabBlockNodes.push(currentNode); }
+                            currentNode = nextNode;
+                        }
+                    };
+                    iterateNodes(container);
+
+                    /** B. Process Graphviz with View Code */
                     const createWrapper = (block, svgUrl, pngUrl) => {
-                        const wrapper = element('div.graphviz-wrapper');
+                        const wrapper = element('div.graphviz-wrapper').style({ position: 'relative' }); // Ensure relative positioning
                         wrapper.dataset({ src: svgUrl, png: pngUrl });
-                        wrapper.html(element('div').style({ textAlign: 'center', padding: '20px', color: '#666' }).text('Cargando diagrama...').html(undefined, true));
+
+                        // Create Canvas for Diagram
+                        const canvas = element('div.graphviz-canvas').style({ textAlign: 'center', padding: '20px', color: '#666' }).text('Cargando diagrama...');
+                        wrapper.appendChild(canvas);
+
+                        // Generate Unique ID for Dialog
+                        const dialogId = 'dialog-gv-' + Math.random().toString(36).substr(2, 9);
+
+                        // Create Dialog
+                        const dialog = element(`dialog#${dialogId}.fluid-dialog`);
+                        const header = element('div.fluid-dialog-header');
+                        header.appendChild(element('h3').text('Código Fuente'));
+                        header.appendChild(element('button').text('✕').attr({ command: 'close', commandfor: dialogId }));
+
+                        const content = element('div.fluid-dialog-content');
+                        const pre = element('pre');
+                        const code = element('code').text(block.textContent); // Embed content directly
+                        pre.appendChild(code);
+                        content.appendChild(pre);
+
+                        dialog.appendChild(header);
+                        dialog.appendChild(content);
+                        wrapper.appendChild(dialog); // Append to wrapper
+
+                        // Add View Code Button (Invoker)
+                        const btn = element('button.view-code-btn').text('Ver Código').attr({
+                            command: 'show-modal',
+                            commandfor: dialogId
+                        }).style({ position: 'absolute', top: '10px', right: '10px', padding: '5px 10px', fontSize: '12px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', zIndex: 100, opacity: 0.7, transition: 'opacity 0.3s' });
+
+                        btn.resume().onmouseenter = () => btn.style({ opacity: 1 });
+                        btn.resume().onmouseleave = () => btn.style({ opacity: 0.7 });
+
+                        wrapper.appendChild(btn);
+
                         block.parentNode.replaceChild(wrapper.resume(), block);
                     };
                     container.querySelectorAll('pre[data-lang="dot"]').forEach(block => {
                         const svgUrl = `https://quickchart.io/graphviz?format=svg&graph=${encodeURIComponent(block.textContent)}`;
                         createWrapper(block, svgUrl, svgUrl);
                     });
+
+                    /** C. Process Mermaid with View Code */
+                    container.querySelectorAll('pre[data-lang="mermaid"]').forEach(block => {
+                        const wrapper = document.createElement('div');
+                        wrapper.style.position = 'relative';
+                        wrapper.className = 'mermaid-wrapper';
+
+                        const div = document.createElement('div');
+                        div.classList.add('mermaid');
+                        const rawContent = (block.querySelector('code') || block).textContent.trim();
+                        div.textContent = rawContent.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
+
+                        wrapper.appendChild(div);
+
+                        // Generate Unique ID for Dialog
+                        const dialogId = 'dialog-mm-' + Math.random().toString(36).substr(2, 9);
+
+                        // Create Dialog
+                        const dialog = document.createElement('dialog');
+                        dialog.id = dialogId;
+                        dialog.className = 'fluid-dialog';
+                        dialog.innerHTML = `
+                            <div class="fluid-dialog-header">
+                                <h3>Código Fuente</h3>
+                                <button command="close" commandfor="${dialogId}">✕</button>
+                            </div>
+                            <div class="fluid-dialog-content">
+                                <pre><code>${(block.querySelector('code') || block).textContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                            </div>
+                        `;
+                        wrapper.appendChild(dialog);
+
+                        // Add View Code Button (Invoker)
+                        const btn = document.createElement('button');
+                        btn.textContent = 'Ver Código';
+                        btn.className = 'view-code-btn';
+                        btn.setAttribute('command', 'show-modal');
+                        btn.setAttribute('commandfor', dialogId);
+                        btn.style.cssText = 'position:absolute;top:10px;right:10px;padding:5px 10px;font-size:12px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:4px;cursor:pointer;z-index:100;opacity:0.7;transition:opacity 0.3s;';
+
+                        btn.onmouseenter = () => btn.style.opacity = '1';
+                        btn.onmouseleave = () => btn.style.opacity = '0.7';
+
+                        wrapper.appendChild(btn);
+
+                        block.parentNode.replaceChild(wrapper, block);
+                    });
+
                     next(container.innerHTML);
                 });
+
+                /** 5. Tab Interactivity & Diagram Zoom */
                 hook.doneEach(function () {
-                    /** Configurar Zoom Compartido */
+                    /** A. Tab Click Handlers */
+                    document.querySelectorAll('.fluid-tab-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            const targetBtn = e.target;
+                            const parent = targetBtn.closest('.fluid-tabs');
+                            if (!parent) return;
+
+                            const tabId = targetBtn.getAttribute('data-tab-target');
+
+                            // Deactivate all
+                            parent.querySelectorAll('.fluid-tab-btn').forEach(b => b.classList.remove('active'));
+                            parent.querySelectorAll('.fluid-tab-panel').forEach(p => {
+                                p.classList.remove('active');
+                                p.style.display = 'none';
+                            });
+
+                            // Activate clicked
+                            targetBtn.classList.add('active');
+                            const targetPanel = parent.querySelector(`[data-tab-content="${tabId}"]`);
+                            if (targetPanel) {
+                                targetPanel.classList.add('active');
+                                targetPanel.style.display = 'block';
+                            }
+                        };
+                    });
+
+                    /** B. Configurar Zoom Compartido */
                     const setupZoom = (containerTarget, svgTarget) => {
                         const [container, svg] = element([containerTarget, svgTarget]);
                         if (!container || !svg || container.selectOne('.zoom-overlay')) return;
@@ -150,7 +338,10 @@
                             const imgBuilder = element('img.zoom-overlay');
                             container.appendChild(imgBuilder);
                             const img = imgBuilder.resume();
-                            const zoom = window.mediumZoom(img, { background: '#0f172a' });
+                            /** Calcular margen para simular 90vw/90vh (5% margen = 24px min) -> El usuario quiere imagen grande */
+                            const margin = Math.min(window.innerWidth, window.innerHeight) * 0.05;
+                            const zoom = window.mediumZoom(img, { background: '#0f172a', margin: margin });
+                            img._zoom = zoom;
                             imgBuilder.onclick((e) => {
                                 if (e.pointerType === 'touch') return;
                                 const currentSvg = container.selectOne('svg');
@@ -165,37 +356,214 @@
                             zoom.on('closed', () => imgBuilder.style({ opacity: '0' }));
                         }
                     };
-                    /** Lógica Graphviz */
+
+                    /** C. Lógica Graphviz */
                     document.querySelectorAll('.graphviz-wrapper').forEach(rawDiv => {
                         const div = element(rawDiv);
                         if (div.getDataset('loaded')) return;
                         const url = div.getDataset('src');
                         if (url) {
                             fetch(url).then(res => res.text()).then(svgContent => {
-                                div.innerHTML = svgContent;
-                                div.dataset('loaded', true);
-                                const svgEl = div.selectOne('svg');
-                                svgEl && setupZoom(div, svgEl);
+                                const canvas = div.resume().querySelector('.graphviz-canvas');
+                                if (canvas) {
+                                    canvas.innerHTML = svgContent;
+                                    div.dataset('loaded', true);
+                                    const svgEl = canvas.querySelector('svg');
+                                    svgEl && setupZoom(div, svgEl);
+                                }
                             }).catch(err => {
-                                div.innerHTML = element('div').style({ color: 'red' }).text('Error cargando diagrama').html();
+                                const canvas = div.resume().querySelector('.graphviz-canvas');
+                                if (canvas) canvas.innerHTML = '<div style="color: red">Error cargando diagrama</div>';
                                 console.error(err);
                             });
                         }
                     });
-                    /** Lógica Mermaid Zoom */
-                    const processMermaidZoom = () => {
-                        document.querySelectorAll('.mermaid').forEach(div => {
+
+                    /** D. Lógica Mermaid Rendering & Zoom */
+                    const processMermaid = async () => {
+                        const nodes = document.querySelectorAll('.mermaid');
+                        if (nodes.length === 0) return;
+
+                        /** 1. Renderizar si mermaid está disponible */
+                        if (window.mermaid) {
+                            // Filtrar nodos que aún no son SVG (texto crudo)
+                            const rawNodes = Array.from(nodes).filter(n => !n.querySelector('svg'));
+                            if (rawNodes.length > 0) {
+                                try {
+                                    // Temporarily reveal hidden tabs for rendering
+                                    const hiddenTabs = [];
+                                    rawNodes.forEach(node => {
+                                        const tab = node.closest('.fluid-tab-panel');
+                                        if (tab && getComputedStyle(tab).display === 'none') {
+                                            tab.style.display = 'block';
+                                            tab.style.visibility = 'hidden';
+                                            tab.style.position = 'absolute'; // avoid layout shift
+                                            hiddenTabs.push(tab);
+                                        }
+                                    });
+
+                                    await window.mermaid.run({ nodes: rawNodes });
+
+                                    // Restore hidden state
+                                    hiddenTabs.forEach(tab => {
+                                        tab.style.display = 'none';
+                                        tab.style.visibility = '';
+                                        tab.style.position = '';
+                                    });
+                                } catch (err) {
+                                    console.error('Mermaid rendering error:', err);
+                                    rawNodes.forEach(rn => rn.style.color = 'red');
+                                }
+                            }
+                        }
+
+                        /** 2. Configurar Zoom (después del renderizado) */
+                        nodes.forEach(div => {
                             const svg = div.querySelector('svg');
                             const overlay = div.querySelector('.zoom-overlay');
                             if (svg && !overlay) setupZoom(div, svg);
                         });
                     };
-                    processMermaidZoom();
-                    setTimeout(processMermaidZoom, 500);
-                    setTimeout(processMermaidZoom, 1500);
-                });
 
+                    processMermaid();
+                    // Retries para esperar carga diferida del módulo mermaid
+                    setTimeout(processMermaid, 500);
+                    setTimeout(processMermaid, 1500);
+                    setTimeout(processMermaid, 3000);
+                });
             }
         ]
     };
 })();
+
+/* Efecto de lupa en las imágenes cuando se abre con zoom image ---*/
+
+(() => {
+    const { element, insertStyle } = window.FluidUI
+    /** @type {number} */ let LOUPE_WIDTH; /** @type {number} */ let LOUPE_HEIGHT; let ZOOM_LEVEL = 2;
+    const clamp = (valor, min, max) => Math.max(min, Math.min(max, valor)); /** retorna valor limitado */
+    /** @type {any} */ let loupe; /** @type {any} */ let loupeGhost; let lastMouseEvent = null, isHorizontal = false, activeObserver = null, currentObjectUrl = null, inactivityTimeout;
+
+    /** 2. Configuración y Eventos */
+    document.addEventListener('click', (e) => {
+        if (e.pointerType === 'touch') return
+        const target = e.target
+        /** Detectar cierre: click en imagen abierta, overlay o fallback si la lupa bloquea */
+        const openedImg = document.querySelector('.medium-zoom-image.medium-zoom-image--opened')
+        const isLoupe = target.classList.contains('fluid-loupe') || target.classList.contains('fluid-loupe-ghost')
+
+        if (openedImg && (openedImg.contains(target) || isLoupe || target.classList.contains('medium-zoom-overlay'))) {
+            if (openedImg._zoom) openedImg._zoom.close()
+            else openedImg.click()
+            hideLoupe()
+            return
+        }
+
+        const isImg = target.tagName === 'IMG' && target.classList.contains('medium-zoom-image')
+        const isMermaid = target.closest('.mermaid') && (target.tagName === 'svg' || target.closest('svg'))
+        if (isImg || isMermaid) setTimeout(() => setupLoupe(isMermaid ? (target.tagName === 'svg' ? target : target.closest('svg')) : target), 300)
+    })
+
+    /** Cierre con tecla Escape */
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Escape') {
+            const openedImg = document.querySelector('.medium-zoom-image--opened')
+            if (openedImg) {
+                if (openedImg._zoom) openedImg._zoom.close()
+                else openedImg.click()
+                hideLoupe()
+            }
+        }
+    })
+
+    const setLoupeState = (styles) => { /** Helper para estado compartido */
+        if (loupe && loupe.style) loupe.style(styles)
+        if (loupeGhost && loupeGhost.style) loupeGhost.style(styles)
+    }
+
+    /** 3. Funciones Principales */
+    function update() {
+        const PERCENTAGE = isHorizontal ? 0.35 : 0.25
+        if (isHorizontal) { LOUPE_HEIGHT = window.innerHeight * PERCENTAGE; LOUPE_WIDTH = Math.min(LOUPE_HEIGHT * (16 / 9), window.innerWidth * 0.9) }
+        else { LOUPE_WIDTH = window.innerWidth * PERCENTAGE; LOUPE_HEIGHT = Math.min(LOUPE_WIDTH * (16 / 9), window.innerHeight * 0.9) }
+
+        loupe = element('div.fluid-loupe', true); loupeGhost = element('div.fluid-loupe-ghost', true)
+        !document.body.contains(loupe.resume()) && document.body.appendChild(loupe.resume())
+        !document.body.contains(loupeGhost.resume()) && document.body.appendChild(loupeGhost.resume())
+
+        /** Actualizar dimensiones dinámicas directamente en el elemento */
+        loupe.style({ width: LOUPE_WIDTH, height: LOUPE_HEIGHT })
+        loupeGhost.style({ width: LOUPE_WIDTH, height: LOUPE_HEIGHT })
+    }
+
+    function onKeyUp(e) {
+        if (e.key === 'Control') { isHorizontal = !isHorizontal; update(); lastMouseEvent && onMouseMove(lastMouseEvent) }
+    }
+
+    function setupLoupe(target) {
+        isHorizontal = false; update(); ZOOM_LEVEL = 2;
+        if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null }
+        let bgUrl = ""
+
+        if (target.tagName === 'IMG') bgUrl = target.src
+        else if (target.tagName === 'svg' || target.tagName === 'SVG') {
+            const svgData = new XMLSerializer().serializeToString(target), blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
+            currentObjectUrl = URL.createObjectURL(blob); bgUrl = currentObjectUrl
+        }
+        loupe.style({ backgroundImage: `url("${bgUrl}")` })
+        document.addEventListener('mousemove', onMouseMove, true); document.addEventListener('wheel', onWheel, { passive: false }); document.addEventListener('keyup', onKeyUp)
+        setLoupeState({ display: 'none' })
+    }
+
+    function hideLoupe() {
+        setLoupeState({ display: 'none' })
+        document.removeEventListener('mousemove', onMouseMove, true); document.removeEventListener('wheel', onWheel); document.removeEventListener('keyup', onKeyUp)
+        if (activeObserver) { activeObserver.disconnect(); activeObserver = null }
+        if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null }
+    }
+
+    function resetInactivityTimer() {
+        if (ZOOM_LEVEL < 1.2) { setLoupeState({ opacity: 0 }); return }
+        setLoupeState({ opacity: 1 }); clearTimeout(inactivityTimeout)
+        inactivityTimeout = setTimeout(() => setLoupeState({ opacity: 0 }), 6000)
+    }
+
+    function onWheel(e) {
+        const activeImage = document.querySelector('.medium-zoom-image--opened'); if (!activeImage) return
+        e.preventDefault(); e.stopPropagation()
+        const delta = Math.sign(e.deltaY) * -0.1
+        ZOOM_LEVEL = clamp(ZOOM_LEVEL + delta, 1, 5)
+        update(); lastMouseEvent && onMouseMove(lastMouseEvent)
+    }
+
+    function onMouseMove(e) {
+        lastMouseEvent = e; resetInactivityTimer()
+        const activeImage = document.querySelector('.medium-zoom-image--opened'); if (!activeImage) { setLoupeState({ display: 'none' }); return }
+        update()
+        const rect = activeImage.getBoundingClientRect(), x = e.clientX, y = e.clientY
+        setLoupeState({ display: 'block' })
+
+        const ghostWidth = LOUPE_WIDTH / ZOOM_LEVEL, ghostHeight = LOUPE_HEIGHT / ZOOM_LEVEL
+        const ghostHalfW = ghostWidth / 2, ghostHalfH = ghostHeight / 2
+
+        /** Calculate Loupe Position (Default) */
+        let lrLeft, lrTop
+        if (isHorizontal) { lrLeft = (window.innerWidth - LOUPE_WIDTH) / 2; lrTop = window.innerHeight - LOUPE_HEIGHT }
+        else { lrLeft = window.innerWidth - LOUPE_WIDTH; lrTop = (window.innerHeight - LOUPE_HEIGHT) / 2 }
+
+        const gRight = x + ghostHalfW, gBottom = y + ghostHalfH, gLeft = x - ghostHalfW, gTop = y - ghostHalfH;
+        const colisionEspectro = (gRight > lrLeft && gLeft < (lrLeft + LOUPE_WIDTH)) && (gBottom > lrTop && gTop < (lrTop + LOUPE_HEIGHT));
+
+        const PERCENTAGE = isHorizontal ? 0.4 : 0.33;
+
+        if (isHorizontal) loupe.style($ => ({ top: colisionEspectro ? '0' : $.percent((1 - PERCENTAGE) * 100), left: '50%', transform: $.transform().translateX("-50%").str() }))
+        else loupe.style($ => ({ left: colisionEspectro ? '0' : $.percent((1 - PERCENTAGE) * 100), top: '50%', transform: $.transform().translateY("-50%").str() }))
+
+        loupeGhost.style($ => ({ top: $.px(clamp(y, rect.top + ghostHalfH, rect.bottom - ghostHalfH)), left: $.px(clamp(x, rect.left + ghostHalfW, rect.right - ghostHalfW)) }))
+
+        const relX = x - rect.left, relY = y - rect.top, mbg = 10
+        const bgX = clamp((relX * ZOOM_LEVEL) - (LOUPE_WIDTH / 2), -mbg, (rect.width - ghostWidth + mbg) * ZOOM_LEVEL)
+        const bgY = clamp((relY * ZOOM_LEVEL) - (LOUPE_HEIGHT / 2), -mbg, (rect.height - ghostHeight + mbg) * ZOOM_LEVEL)
+        loupe.style({ backgroundSize: `${rect.width * ZOOM_LEVEL}px ${rect.height * ZOOM_LEVEL}px`, backgroundPosition: `${-bgX}px ${-bgY}px` })
+    }
+})()

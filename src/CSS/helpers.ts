@@ -2,6 +2,7 @@
 import type { TStrNum } from "@components/ui/ts/constantes"
 import type { TSombraVal, TStrNumUnd } from "@components/ui/superficies/Div/Div.types"
 import type { Expr, THelpers } from "./types"
+import { buildStyle } from "./toCSS"
 import { lerp, clamp, porcentajeEnRango, mapear, random, randomElemento, randomEntero, enRango, distancia } from "@components/ui/utilidades/ts/matematicas"
 
 /** 2. Types */
@@ -14,17 +15,22 @@ export const HTML_TAGS: readonly string[] = ["a", "abbr", "address", "area", "ar
 /** 5. Arrow Functions */
 /** Ayudante de unidades */ const u = (val: TStrNum) => new UnitValue(val)
 /** Crea operacion */ const createOp = (op: string) => (...args: (Expr | TStrNum)[]) => new Operation(op, args)
-/** Clamp para CSS */ const clampCss = (min: number, max: number, unit: string) => `clamp(${min}${unit}, ${min}${unit} + (${max} - ${min}) * ((100vw - 400px) / (1100 - 400)), ${max}${unit})`
+/** Interpola valores */ const clampCss = (min: number, max: number, unit: string, minView = 400, maxView = 1100, axis: 'w' | 'h' = 'w') => `clamp(${Math.min(min, max)}${unit}, calc(${min}${unit} + (${max} - ${min}) * ((${cssVar({ [axis === 'w' ? 'windowWidth' : 'windowHeight']: axis === 'w' ? "100vw" : "100vh" })} - ${minView}px) / (${maxView} - ${minView}))), ${Math.max(min, max)}${unit})`
+/** Clamp width */ export const clampwcss = (min: number, max: number, unit: string, minW = 400, maxW = 1100) => clampCss(min, max, unit, minW, maxW, 'w')
+/** Clamp height */ export const clamphcss = (min: number, max: number, unit: string, minH = 400, maxH = 1100) => clampCss(min, max, unit, minH, maxH, 'h')
 /** Infiere unidad */ const inferUnit = (val: TStrNum, unit: string = "%") => typeof val === "number" ? `${val}${unit}` : val.endsWith(unit) ? val : `${val}${unit}`
 /** Agrega sufijo si es numero */ const addSufix = (v: TStrNum, sufix: string) => {
     if (typeof v === 'number') return `${v}${sufix}`
     if (typeof v === 'string') { if (v.endsWith(sufix)) return v; if (sufix.trim() === "!important") return `${v}${sufix}`; if (/^-?\d+(\.\d+)?$/.test(v)) return `${v}${sufix}` }
     return v
 }
-/** Ayudante generico para espaciado */ const spacingHelper = (args: any[]) => {
-    let unitFn = px, values = args
-    if (typeof args[args.length - 1] === 'function') { unitFn = args.pop(); values = args }
-    return values.map(v => typeof v === 'number' ? (v === 0 ? '0' : unitFn(v)) : v).join(' ')
+/** Ayudante generico para espaciado */ export const join = (...args: any[]) => {
+    let values = args, separator = ' ', unitFn = (v: any) => v
+    if (Array.isArray(args[0]) && args.length <= 3) {
+        values = args[0]; if (args[1]) separator = args[1]
+    }
+    if (typeof values[values.length - 1] === 'function') { unitFn = values.pop()!; }
+    return values.map(v => typeof v === 'number' ? (v === 0 ? '0' : unitFn(v)) : v).join(separator)
 }
 
 /** 6. Funciones Estándar y Clases */
@@ -60,27 +66,22 @@ export class Operation implements Expr {
     toString() { return this.resolve() /** retorna resultado de operacion (Wrapper de resolve [invocacion implicita]) */ }
 }
 
-export class Group extends Operation {
-    constructor(arg: Expr | TStrNum) { super("", [arg]) }
-    resolve(ctxUnit?: string) {
-        const arg = this.args[0]
-        const val = typeof arg === 'object' && arg !== null && 'resolve' in arg ? (arg as Expr).resolve(ctxUnit) : String(arg) /** resuelve expresion interna */
-        return `(${val})` /** retorna expresion agrupada */
-    }
-}
+// Group class removed as per user request to simplify group helper
+export const group = (arg: Expr | TStrNum) => `(${arg})`
 
 /** 7. Objects */
-const CALC_OPS = {
-    /** Operadores */ add: createOp("+"), sub: createOp("-"), mult: createOp("*"), div: createOp("/"),
-    /** Agrupacion */ group: (arg: Expr | TStrNum) => new Group(arg)
-}
+/** Operadores Matematicos Explicitos */
+export const add = createOp("+"); export const sub = createOp("-"); export const mult = createOp("*"); export const div = createOp("/")
+export const addagr = (...args: (Expr | TStrNum)[]) => group(add(...args)); export const subagr = (...args: (Expr | TStrNum)[]) => group(sub(...args));
+export const multagr = (...args: (Expr | TStrNum)[]) => group(mult(...args)); export const divagr = (...args: (Expr | TStrNum)[]) => group(div(...args));
 
 export const COLOR_OPS = {
-    ...CALC_OPS,
     /** Canales HSL */ h: new Channel("h", "deg"), s: new Channel("s", "%"), l: new Channel("l", "%"),
     /** Canales RGB */ r: new Channel("r"), g: new Channel("g"), b: new Channel("b"), a: new Channel("alpha"),
     /** Maximos */ rgbMax: "255",
-    /** Utilidades */ u
+    /** Utilidades */ u,
+    /** Operadores */ add, sub, mult, div,
+    /** Operadores Agrupados */ addagr, subagr, multagr, divagr
 }
 
 /** 7. Exports */
@@ -91,7 +92,16 @@ export const COLOR_OPS = {
     }
     return `var(--${[name, ...strs].map(s => String(s).replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)).join("-")})` /** variable css simple */
 }
-/** Interpola valores */ export const lerpcss = ({ min, max, unit = "px" }: { min: number | [number, number], max: number | [number, number], unit?: string }) => (Array.isArray(min) && Array.isArray(max)) ? `${clampCss(min[0], max[0], unit)} ${clampCss(min[1], max[1], unit)}` : clampCss(min as number, max as number, unit) /** valor interpolado con clamp */
+
+/** Interpola valores */ export const lerpcss = (props: { from?: { value: number | [number, number], width?: number }, to?: { value: number | [number, number], width?: number }, min?: number | [number, number], max?: number | [number, number], unit?: string }) => {
+    const { from, to, min, max, unit = "px" } = props;
+    const v1 = from?.value ?? min; const v2 = to?.value ?? max;
+    const w1 = from?.width ?? 400; const w2 = to?.width ?? 1100;
+
+    if (v1 === undefined || v2 === undefined) return "";
+
+    return (Array.isArray(v1) && Array.isArray(v2)) ? `${clampCss(v1[0], v2[0], unit, w1, w2)} ${clampCss(v1[1], v2[1], unit, w1, w2)}` : clampCss(v1 as number, v2 as number, unit, w1, w2)
+}
 /** Genera color HSL */ export const hsl = (h: TStrNum, s: TStrNum, l: TStrNum, a?: TStrNum) => a !== undefined ? `hsla(${h}, ${inferUnit(s)}, ${inferUnit(l)}, ${a})` : `hsl(${h}, ${inferUnit(s)}, ${inferUnit(l)})` /** color hsl o hsla */
 /** Genera color RGB */ export const rgb = (...args: TStrNum[]) => args.length === 1 ? `rgb(${args[0]}, ${args[0]}, ${args[0]})` : args.length === 2 ? `rgba(${args[0]}, ${args[0]}, ${args[0]}, ${args[1]})` : args.length === 3 ? `rgb(${args[0]}, ${args[1]}, ${args[2]})` : `rgba(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})` /** color rgb o rgba */
 /** Genera color RGBA (alias inteligente) */ export const rgba = (...args: number[]) => {
@@ -121,10 +131,14 @@ export const COLOR_OPS = {
 }
 /** Genera fondo multiple */ export const background = (...args: string[]) => args.join(', ')
 /** Genera familia de fuentes */ export const font = (...families: string[]) => families.map(f => f.includes(' ') ? `"${f}"` : f).join(', ')
-/** Genera margen */ export const margin = (...args: any[]) => spacingHelper(args)
-/** Genera relleno */ export const padding = (...args: any[]) => spacingHelper(args)
+/** Genera margen */ export const margin = (...args: any[]) => typeof args[args.length - 1] === 'function' ? join(...args) : join(...args, px)
+/** Genera relleno */ export const padding = (...args: any[]) => typeof args[args.length - 1] === 'function' ? join(...args) : join(...args, px)
+/** Une con espacio */ export const joinSpace = (...args: any[]) => join(args, ' ')
+/** Une con coma */ export const joinComma = (...args: any[]) => join(args, ', ')
 /** Genera modo claro-oscuro */ export const lightDark = (light: string, dark: string) => `light-dark(${light}, ${dark})`
-/** Genera calculo */ export const calc = (expr: string | ((ops: typeof COLOR_OPS) => Expr | string)) => `calc(${typeof expr === 'function' ? (res => typeof res === 'object' && 'resolve' in res ? res.resolve() : res)(expr(COLOR_OPS)) : expr})`
+/** Genera calculo */ export const calc = (expr: Expr | string) => `calc(${typeof expr === 'object' && 'resolve' in expr ? expr.resolve() : expr})`
+/** Genera maximo */ export const max = (...args: (Expr | TStrNum)[]) => `max(${args.map(a => typeof a === 'object' && 'resolve' in a ? a.resolve() : typeof a === 'number' ? `${a}px` : a).join(', ')})`
+/** Genera minimo */ export const min = (...args: (Expr | TStrNum)[]) => `min(${args.map(a => typeof a === 'object' && 'resolve' in a ? a.resolve() : typeof a === 'number' ? `${a}px` : a).join(', ')})`
 /** Genera URL */ export const url = (path: string) => `url("${path}")`
 /** Genera formato */ export const format = (fmt: string) => `format("${fmt}")`
 /** Genera HSL desde componentes */ export const hslFrom = (fn: (cols: TColorOps, uHelper: typeof u) => (Expr | TStrNum | ((ops: TColorOps, uHelper: typeof u) => Expr | TStrNum))[]) => {
@@ -147,7 +161,14 @@ export const COLOR_OPS = {
     const _a = a !== undefined ? resolve(a) : undefined
     return _a !== undefined ? `rgb(from ${base} ${resolve(r)} ${resolve(g)} ${resolve(b)} / ${_a})` : `rgb(from ${base} ${resolve(r)} ${resolve(g)} ${resolve(b)})` /** color rgb relativo */
 }
-/** Genera borde */ export const border = ({ width = 1, style = "solid", color = "black" }: { width?: TStrNum; style?: string; color?: string } = {}) => `${typeof width === "number" ? `${width}px` : width} ${style} ${color}`
+/** Genera borde */ export const border = ({ width = 1, style = "solid", color = "black" }: { width?: TStrNum; style?: string; color?: string } = {}) => {
+    if (style === "none") return "none"
+    const parts = []
+    parts.push(typeof width === "number" ? `${width}px` : width)
+    parts.push(style)
+    parts.push(color)
+    return parts.join(" ")
+}
 /** Convierte sombra */ export const convertBoxShadow = (val: TSombraVal): string => {
     if (!val) return "" /** cadena vacia */
     if (typeof val === 'string') return val /** valor como string */
@@ -178,6 +199,14 @@ export const COLOR_OPS = {
         return `${prop} ${timeStr} ${easeStr} ${delayStr}`.trim()
     }).join(', ')
 }
+/** Genera animacion */ export const animation = (...props: (string | { name: string, duration?: TStrNum, timing?: string, delay?: TStrNum, iter?: TStrNum, dir?: string, fill?: string, state?: string })[]) => {
+    return props.map(p => {
+        if (typeof p === 'string') return p
+        const { name, duration = "1s", timing = "ease", delay = 0, iter = 1, dir = "normal", fill = "none", state = "running" } = p
+        const time = (v: TStrNum) => typeof v === 'number' ? `${v}s` : v
+        return `${name} ${time(duration)} ${timing} ${time(delay)} ${iter} ${dir} ${fill} ${state}`
+    }).join(', ')
+}
 /** Genera transformacion */ export const transform = (initial?: Record<string, TStrNum>) => {
     const ops: string[] = []
     const add = (fn: string, val: TStrNum, def: number, unit: string = "") => ops.push(`${fn}(${typeof val === 'number' ? `${val ?? def}${unit}` : val})`)
@@ -191,17 +220,27 @@ export const COLOR_OPS = {
     if (initial) Object.entries(initial).forEach(([k, v]) => k in builder && (builder as any)[k](v))
     return builder /** builder de transformaciones */
 }
-/** Genera sombra de caja */ export const boxShadow = ({ dX = 0, dY = 0, blur = 0, spread = 0, color = "black", inset = false }: { dX?: number; dY?: number; blur?: number; spread?: number; color?: string; inset?: boolean }) => `${inset ? "inset " : ""}${dX}px ${dY}px ${blur}px ${spread}px ${color}`
-/** Ayudante de union */ export const join = (...args: any[]) => {
-    let config = { separator: ' ', unit: 'px' }, values = args
-    if (args.length > 0 && typeof args[args.length - 1] === 'object' && args[args.length - 1] !== null && !Array.isArray(args[args.length - 1])) { config = { ...config, ...args[args.length - 1] }; values = args.slice(0, -1) }
-    return values.map(v => { if (typeof v === 'number') { if (v === 0) return '0'; return `${v}${config.unit}` } return v }).join(config.separator)
-}
+/** Genera sombra de caja */ export const boxShadow = (...args: TSombraVal[]) => args.map(convertBoxShadow).join(", ")
+// join removido de aqui para evitar duplicidad y usar el definido arriba
 /** Ayudantes de unidades */
 export const em = (val: TStrNum) => addSufix(val, "em"); export const rem = (val: TStrNum) => addSufix(val, "rem"); export const px = (val: TStrNum) => addSufix(val, "px");
 export const percent = (val: TStrNum) => addSufix(val, "%"); export const s = (val: TStrNum) => addSufix(val, "s"); export const ms = (val: TStrNum) => addSufix(val, "ms");
 export const deg = (val: TStrNum) => addSufix(val, "deg"); export const vh = (val: TStrNum) => addSufix(val, "vh"); export const vw = (val: TStrNum) => addSufix(val, "vw");
-export const important = (val: TStrNum) => addSufix(val, " !important");
+export const important = (val: TStrNum | Record<string, any>) => {
+    const sfx = " !important";
+    if (typeof val === 'object' && val !== null) {
+        const res: Record<string, string> = {};
+        for (const key in val) {
+            let v = val[key]
+            if (key === "boxShadow" && typeof v === 'object' && v !== null && !Array.isArray(v)) v = convertBoxShadow(v)
+            else if (key === "boxShadow" && Array.isArray(v)) v = v.map(convertBoxShadow).join(", ")
+            else if (key.startsWith("border") && typeof v === 'object' && v !== null && !Array.isArray(v) && ("width" in v || "style" in v || "color" in v)) v = border(v)
+            res[key] = addSufix(v, sfx)
+        }
+        return res
+    }
+    return addSufix(val, sfx)
+}
 /** Genera curva cubica */ export const cubicBezier = (x1: number, y1: number, x2: number, y2: number) => `cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`
 /** Genera rango */ export const range = (start: number, stop: number, step: number = 1): number[] => Array.from({ length: Math.ceil((stop - start) / step) }, (_, i) => start + i * step)
 /** Genera entradas de mapa por rango */ export const rangeMapEntries = <T>(start: number, stop: number, fn: (i: number) => [string, T], step: number = 1): Record<string, T> => {
@@ -223,14 +262,43 @@ export const opacity = (v: TStrNum) => `opacity(${v})`; export const saturate = 
 export const sepia = (v: TStrNum) => `sepia(${v})`
 /** Genera texto entre comillas */ export const text = (val: string) => `'${val}'`
 
-/** 8. Main Object */
+/** 8. Media Query Helpers */
+/** Less than width */ export const ltw = (width: TStrNum, then: any, elseVal?: any) => {
+    const val = typeof width === 'number' ? `${width}px` : width
+    return { [`@media screen and (width <= ${val})`]: buildStyle(then), ...elseVal ? { [`@media screen and (width > ${val})`]: buildStyle(elseVal) } : {} }
+}
+/** Greater than width */ export const gtw = (width: TStrNum, then: any, elseVal?: any) => {
+    const val = typeof width === 'number' ? `${width}px` : width
+    return { [`@media screen and (width >= ${val})`]: buildStyle(then), ...elseVal ? { [`@media screen and (width < ${val})`]: buildStyle(elseVal) } : {} }
+}
+/** Between width */ export const btww = (min: TStrNum, max: TStrNum, then: any, elseVal?: any, elseMax?: any) => {
+    const minVal = typeof min === 'number' ? `${min}px` : min; const maxVal = typeof max === 'number' ? `${max}px` : max
+    return { [`@media screen and (width >= ${minVal}) and (width <= ${maxVal})`]: buildStyle(then), ...elseVal ? { [`@media screen and (width < ${minVal})`]: buildStyle(elseVal) } : {}, ...elseMax ? { [`@media screen and (width > ${maxVal})`]: buildStyle(elseMax) } : {} }
+}
+/** Less than height */ export const lth = (height: TStrNum, then: any, elseVal?: any) => {
+    const val = typeof height === 'number' ? `${height}px` : height
+    return { [`@media screen and (height <= ${val})`]: buildStyle(then), ...elseVal ? { [`@media screen and (height > ${val})`]: buildStyle(elseVal) } : {} }
+}
+/** Greater than height */ export const gth = (height: TStrNum, then: any, elseVal?: any) => {
+    const val = typeof height === 'number' ? `${height}px` : height
+    return { [`@media screen and (height >= ${val})`]: buildStyle(then), ...elseVal ? { [`@media screen and (height < ${val})`]: buildStyle(elseVal) } : {} }
+}
+/** Between height */ export const btwh = (min: TStrNum, max: TStrNum, then: any, elseVal?: any, elseMax?: any) => {
+    const minVal = typeof min === 'number' ? `${min}px` : min; const maxVal = typeof max === 'number' ? `${max}px` : max
+    return { [`@media screen and (height >= ${minVal}) and (height <= ${maxVal})`]: buildStyle(then), ...elseVal ? { [`@media screen and (height < ${minVal})`]: buildStyle(elseVal) } : {}, ...elseMax ? { [`@media screen and (height > ${maxVal})`]: buildStyle(elseMax) } : {} }
+}
+
+/** 9. Main Object */
 export const HELPERS: THelpers = {
     /** Display */ none: "none", hidden: "hidden", visible: "visible", absolute: "absolute", relative: "relative", block: "block", inline: "inline", inlineBlock: "inline-block", flex: "flex", grid: "grid",
+    /** Flexbox */ column: "column", row: "row", flexEnd: "flex-end", spaceBetween: "space-between", spaceAround: "space-around", spaceEvenly: "space-evenly", wrap: "wrap",
     /** Globales */ auto: "auto", inherit: "inherit", initial: "initial", unset: "unset", transparent: "transparent", currentColor: "currentColor", pointer: "pointer", squareRatio: "1 / 1",
     /** Texto */ normal: "normal", left: "left", center: "center", uppercase: "uppercase", nowrap: "nowrap", dark: "dark", light: "light", thin: "thin",
     /** UI */ notAllowed: "not-allowed", borderBox: "border-box", antialiased: "antialiased", touch: "touch", middle: "middle",
     /** Posicion */ fixed: "fixed", sticky: "sticky", static: "static", flexStart: "flex-start", top: "top", right: "right", bottom: "bottom", topRight: "top right", topLeft: "top left", bottomRight: "bottom right", bottomLeft: "bottom left",
-    /** Funciones */ range, rangeMapEntries, transition, transform, boxShadow, convertBoxShadow, border, rgb, rgba, important, cubicBezier, lerpcss, hsl, lightDark, calc, url, format, linearGradient, radialGradient, background, font, fontFamily, margin, padding, join, hslFrom, rgbFrom, cssVar,
+    /** Funciones */ range, rangeMapEntries, transition, animation, transform, boxShadow, convertBoxShadow, border, rgb, rgba, important, cubicBezier, lerpcss, clampwcss, clamphcss, hsl, lightDark, calc, url, format, linearGradient, radialGradient, background, font, fontFamily, margin, padding, join, joinSpace, joinComma, hslFrom, rgbFrom, cssVar, add, sub, mult, div, group, max, min,
+    addagr, subagr, multagr, divagr,
+    /** Media Query Helpers */ ltw, gtw, btww, lth, gth, btwh,
     /** Unidades */ em, rem, px, percent, s, ms, deg, vh, vw,
     /** Filtros */ filter, dropShadow, blur, brightness, contrast, hueRotate, invert, opacity, saturate, sepia, grayscale,
     /** Utils */ text, lerp: lerpcss /** alias para mejor legibilidad */,
