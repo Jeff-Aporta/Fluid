@@ -25,9 +25,11 @@
     style="border: 1px solid rgba(128, 128, 128, 0.5); width: fit-content; padding: 10px; margin: 10px auto; color: hotpink;text-align: left;">
     <span style="color: white;">NPM:</span>&nbsp;&nbsp;&nbsp;
     <code><span style="color: LightSalmon;">npm</span> <span style="color: Khaki;">i</span> @ingenieria_insoft/ispsveltecomponents</code>
-    <br />
-    <span style="color: white;">CDN:</span>&nbsp;&nbsp;&nbsp;
-    <code>&lt;script <span style="color: LightSalmon;">src</span><span style="color: white;">=</span><span style="color: Khaki;">"https://jeff-aporta.github.io/Fluid/js/fluid.js"</span>&gt;&lt;/script&gt;</code>
+    <div id="CDN-script">
+        <br />
+        <span style="color: white;">CDN:</span>&nbsp;&nbsp;&nbsp;
+        <code>&lt;script <span style="color: LightSalmon;">src</span><span style="color: white;">=</span><span style="color: Khaki;">"https://jeff-aporta.github.io/Fluid/js/fluid.js"</span>&gt;&lt;/script&gt;</code>
+    </div>
 </div>
 
 

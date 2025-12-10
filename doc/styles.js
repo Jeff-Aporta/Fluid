@@ -84,6 +84,9 @@ if (mermaid) {
         code: {
             vars: { bgCode: bgCodeTransparent }
         },
+        "#CDN-script": {
+            display: window.location.hostname === "jeff-aporta.github.io" ? "block" : "none"
+        },
         "*": {
             webkitFontSmoothing: $.antialiased, mozOsxFontSmoothing: "grayscale",
             webkitOverflowScrolling: $.touch, webkitTapHighlightColor: $.transparent, webkitTextSizeAdjust: $.none, webkitTouchCallout: $.none, boxSizing: $.borderBox,
