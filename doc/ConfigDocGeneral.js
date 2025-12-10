@@ -119,13 +119,8 @@
                                 if (sidebarRaw && linkRaw) {
                                     const sidebarRect = sidebarRaw.getBoundingClientRect();
                                     const linkRect = linkRaw.getBoundingClientRect();
-
-                                    // Calculate center alignment offset
-                                    const sidebarCenter = sidebarRect.top + (sidebarRect.height / 2);
-                                    const linkCenter = linkRect.top + (linkRect.height / 2);
-                                    const offset = linkCenter - sidebarCenter;
-
-                                    // Apply offset to ensure centering
+                                    const linkCenter = linkRect.top;
+                                    const offset = linkCenter - sidebarRect.height / 2;
                                     sidebarRaw.scrollBy({ top: offset, behavior: 'smooth' });
                                 }
                             }
