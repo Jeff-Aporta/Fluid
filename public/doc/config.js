@@ -250,19 +250,6 @@
 
     /* 7. CONFIGURACION GENERAL */
     const ConfigDocGeneral = {
-        name: 'Fluid UI',
-        repo: '',
-        loadSidebar: 'public/doc/md/_sidebar.md',
-        loadNavbar: false,
-
-        coverpage: 'public/doc/md/_coverpage_fluid.md',
-        auto2top: true,
-        executeScript: true,
-        themeColor: '#00AEEF',
-        alias: {
-            '/.*/_sidebar.md': 'public/doc/md/_sidebar.md',
-            '/.*/_coverpage.md': 'public/doc/md/_coverpage_fluid.md'
-        },
         /* Buscador */
         search: { maxAge: 86400000, paths: 'auto', placeholder: 'Buscar...', noData: 'No se encontraron resultados', depth: 6 },
         /* Zoom */
