@@ -190,19 +190,28 @@
     }
 
     /* actualiza enlace activo en sidebar */
+    let scrollSpyReady = false
+    setTimeout(() => scrollSpyReady = true, 3000)
+
     const updateActiveLink = (main, sidebarEl) => {
         const headers = main.selectAll('h1, h2, h3, h4, h5, h6')
         if (!headers.length) return;
 
         let activeId = ''
-        // Find the last header that is above the threshold (120px)
+        // Find the last header that is above the threshold (180px)
         for (const header of headers) {
             const node = header.resume ? header.resume() : header
-            if (node.getBoundingClientRect().top < 120) {
+            if (node.getBoundingClientRect().top < 180) {
                 activeId = node.id
             } else {
                 break
             }
+        }
+
+        /* Startup: Force match URL ID if not ready yet */
+        if (!scrollSpyReady) {
+            const urlMatch = window.location.hash.match(/[?&]id=([^&#]+)/)
+            if (urlMatch) activeId = urlMatch[1]
         }
 
         if (activeId) {
@@ -230,7 +239,7 @@
                 }
 
                 const newHash = `/?id=${activeId}`
-                if (window.location.hash !== `#${newHash}`) history.replaceState(null, '', `#${newHash}`)
+                if (scrollSpyReady && window.location.hash !== `#${newHash}`) history.replaceState(null, '', `#${newHash}`)
 
                 const sidebarRect = sidebarNode.getBoundingClientRect()
                 const linkRect = linkNode.getBoundingClientRect()
@@ -289,7 +298,7 @@
                     if (main && sidebarEl) {
                         let scrollTimeout
                         window.addEventListener('scroll', () => { if (scrollTimeout) clearTimeout(scrollTimeout); scrollTimeout = setTimeout(() => updateActiveLink(main, sidebarEl), 1) })
-                        setTimeout(() => updateActiveLink(main, sidebarEl), 300)
+                        setTimeout(() => updateActiveLink(main, sidebarEl), 500)
                     }
                 })
                 /* 2. CodeMirror Integration */
