@@ -1025,7 +1025,7 @@ main {
             display: inline-block;
             width: 32px;
             height: 32px;
-            background-image: url('doc/assets/logo.svg');
+            background-image: url('public/assets/logo.svg');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;

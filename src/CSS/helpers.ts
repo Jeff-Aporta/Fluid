@@ -4,14 +4,11 @@ import type { TSombraVal, TStrNumUnd } from "@components/ui/superficies/Div/Div.
 import type { Expr, THelpers } from "./types"
 import { buildStyle } from "./toCSS"
 import { lerp, clamp, porcentajeEnRango, mapear, random, randomElemento, randomEntero, enRango, distancia } from "@components/ui/utilidades/ts/matematicas"
-
 /** 2. Types */
 export type TColorOps = typeof COLOR_OPS
-
 /** 4. Variables del Módulo */
 export const CSS_ATTRS_NUMBER: readonly string[] = ["z-index", "scale", "opacity", "line-height", "flex-grow", "font-weight"]
 export const HTML_TAGS: readonly string[] = ["a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo", "blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup", "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "embed", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "iframe", "img", "input", "ins", "kbd", "label", "legend", "li", "link", "main", "map", "mark", "meta", "meter", "nav", "noscript", "object", "ol", "optgroup", "option", "output", "p", "param", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "script", "section", "select", "small", "source", "span", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr"]
-
 /** 5. Arrow Functions */
 /** Ayudante de unidades */ const u = (val: TStrNum) => new UnitValue(val)
 /** Crea operacion */ const createOp = (op: string) => (...args: (Expr | TStrNum)[]) => new Operation(op, args)
@@ -32,20 +29,17 @@ export const HTML_TAGS: readonly string[] = ["a", "abbr", "address", "area", "ar
     if (typeof values[values.length - 1] === 'function') { unitFn = values.pop()!; }
     return values.map(v => typeof v === 'number' ? (v === 0 ? '0' : unitFn(v)) : v).join(separator)
 }
-
 /** 6. Funciones Estándar y Clases */
 export class Channel implements Expr {
     constructor(public name: string, public preferredUnit?: string) { }
     resolve() { return this.name /** retorna nombre del canal */ }
     toString() { return this.resolve() /** retorna nombre del canal (Wrapper de resolve [invocacion implicita]) */ }
 }
-
 export class UnitValue implements Expr {
     constructor(public value: TStrNum) { }
     resolve(ctxUnit?: string) { return `${this.value}${ctxUnit || ""}` /** retorna valor concatenado con unidad */ }
     toString() { return String(this.value) /** retorna valor como texto */ }
 }
-
 export class Operation implements Expr {
     constructor(public op: string, public args: (Expr | TStrNum)[]) { }
     resolve(ctxUnit?: string): string {
@@ -65,16 +59,13 @@ export class Operation implements Expr {
     }
     toString() { return this.resolve() /** retorna resultado de operacion (Wrapper de resolve [invocacion implicita]) */ }
 }
-
 // Group class removed as per user request to simplify group helper
 export const group = (arg: Expr | TStrNum) => `(${arg})`
-
 /** 7. Objects */
 /** Operadores Matematicos Explicitos */
 export const add = createOp("+"); export const sub = createOp("-"); export const mult = createOp("*"); export const div = createOp("/")
 export const addagr = (...args: (Expr | TStrNum)[]) => group(add(...args)); export const subagr = (...args: (Expr | TStrNum)[]) => group(sub(...args));
 export const multagr = (...args: (Expr | TStrNum)[]) => group(mult(...args)); export const divagr = (...args: (Expr | TStrNum)[]) => group(div(...args));
-
 export const COLOR_OPS = {
     /** Canales HSL */ h: new Channel("h", "deg"), s: new Channel("s", "%"), l: new Channel("l", "%"),
     /** Canales RGB */ r: new Channel("r"), g: new Channel("g"), b: new Channel("b"), a: new Channel("alpha"),
@@ -83,7 +74,6 @@ export const COLOR_OPS = {
     /** Operadores */ add, sub, mult, div,
     /** Operadores Agrupados */ addagr, subagr, multagr, divagr
 }
-
 /** 7. Exports */
 /** Genera variable CSS */ export const cssVar = (name: TStrNum | Record<string, TStrNum>, ...strs: string[]) => {
     if (typeof name === "object") {
@@ -92,16 +82,24 @@ export const COLOR_OPS = {
     }
     return `var(--${[name, ...strs].map(s => String(s).replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)).join("-")})` /** variable css simple */
 }
-
 /** Interpola valores */ export const lerpcss = (props: { from?: { value: number | [number, number], width?: number }, to?: { value: number | [number, number], width?: number }, min?: number | [number, number], max?: number | [number, number], unit?: string }) => {
     const { from, to, min, max, unit = "px" } = props;
     const v1 = from?.value ?? min; const v2 = to?.value ?? max;
     const w1 = from?.width ?? 400; const w2 = to?.width ?? 1100;
-
     if (v1 === undefined || v2 === undefined) return "";
-
     return (Array.isArray(v1) && Array.isArray(v2)) ? `${clampCss(v1[0], v2[0], unit, w1, w2)} ${clampCss(v1[1], v2[1], unit, w1, w2)}` : clampCss(v1 as number, v2 as number, unit, w1, w2)
 }
+/** Interpola valores (Height) */ export const lerphcss = (props: { from?: { value: number | [number, number], height?: number }, to?: { value: number | [number, number], height?: number }, min?: number | [number, number], max?: number | [number, number], unit?: string }) => {
+    const { from, to, min, max, unit = "px" } = props;
+    const v1 = from?.value ?? min; const v2 = to?.value ?? max;
+    const h1 = from?.height ?? 400; const h2 = to?.height ?? 1100;
+    if (v1 === undefined || v2 === undefined) return "";
+    return (Array.isArray(v1) && Array.isArray(v2)) ? `${clampCss(v1[0], v2[0], unit, h1, h2, 'h')} ${clampCss(v1[1], v2[1], unit, h1, h2, 'h')}` : clampCss(v1 as number, v2 as number, unit, h1, h2, 'h')
+}
+
+/** Aliases amigables */
+export const clampw = clampwcss; export const clamph = clamphcss;
+export const lerpw = lerpcss; export const lerph = lerphcss;
 /** Genera color HSL */ export const hsl = (h: TStrNum, s: TStrNum, l: TStrNum, a?: TStrNum) => a !== undefined ? `hsla(${h}, ${inferUnit(s)}, ${inferUnit(l)}, ${a})` : `hsl(${h}, ${inferUnit(s)}, ${inferUnit(l)})` /** color hsl o hsla */
 /** Genera color RGB */ export const rgb = (...args: TStrNum[]) => args.length === 1 ? `rgb(${args[0]}, ${args[0]}, ${args[0]})` : args.length === 2 ? `rgba(${args[0]}, ${args[0]}, ${args[0]}, ${args[1]})` : args.length === 3 ? `rgb(${args[0]}, ${args[1]}, ${args[2]})` : `rgba(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})` /** color rgb o rgba */
 /** Genera color RGBA (alias inteligente) */ export const rgba = (...args: number[]) => {
@@ -261,7 +259,6 @@ export const hueRotate = (v: TStrNum) => `hue-rotate(${filterUnit(v, "deg")})`; 
 export const opacity = (v: TStrNum) => `opacity(${v})`; export const saturate = (v: TStrNum) => `saturate(${v})`
 export const sepia = (v: TStrNum) => `sepia(${v})`
 /** Genera texto entre comillas */ export const text = (val: string) => `'${val}'`
-
 /** 8. Media Query Helpers */
 /** Less than width */ export const ltw = (width: TStrNum, then: any, elseVal?: any) => {
     const val = typeof width === 'number' ? `${width}px` : width
@@ -287,7 +284,6 @@ export const sepia = (v: TStrNum) => `sepia(${v})`
     const minVal = typeof min === 'number' ? `${min}px` : min; const maxVal = typeof max === 'number' ? `${max}px` : max
     return { [`@media screen and (height >= ${minVal}) and (height <= ${maxVal})`]: buildStyle(then), ...elseVal ? { [`@media screen and (height < ${minVal})`]: buildStyle(elseVal) } : {}, ...elseMax ? { [`@media screen and (height > ${maxVal})`]: buildStyle(elseMax) } : {} }
 }
-
 /** 9. Main Object */
 export const HELPERS: THelpers = {
     /** Display */ none: "none", hidden: "hidden", visible: "visible", absolute: "absolute", relative: "relative", block: "block", inline: "inline", inlineBlock: "inline-block", flex: "flex", grid: "grid",
@@ -302,5 +298,6 @@ export const HELPERS: THelpers = {
     /** Unidades */ em, rem, px, percent, s, ms, deg, vh, vw,
     /** Filtros */ filter, dropShadow, blur, brightness, contrast, hueRotate, invert, opacity, saturate, sepia, grayscale,
     /** Utils */ text, lerp: lerpcss /** alias para mejor legibilidad */,
+    clampw: clampwcss, clamph: clamphcss, lerpw: lerpcss, lerph: lerphcss,
     /** Matematicas */ math: { lerp, clamp, porcentajeEnRango, mapear, random, randomElemento, randomEntero, enRango, distancia }
 }

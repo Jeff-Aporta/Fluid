@@ -1,11 +1,9 @@
 import * as esbuild from 'esbuild';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 /** 1. Variables del modulo */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 /** 2. Plugins y Configuracion */
 /** Plugin para ignorar archivos svelte y css durante el build */
 const stubPlugin = {
@@ -22,12 +20,11 @@ const stubPlugin = {
         build.onLoad({ filter: /.*/, namespace: 'stub-css' }, args => ({ contents: '', loader: 'css' }));
     }
 };
-
 /** 3. Inicializacion del Modulo */
 const moduloInicio = async () => {
     try {
         await esbuild.build({
-            entryPoints: [path.resolve(__dirname, '../index.ts')],
+            entryPoints: [path.resolve(__dirname, '../../index.ts')],
             bundle: true,
             outfile: path.resolve(__dirname, 'fluid.js'),
             format: 'iife',
@@ -41,7 +38,4 @@ const moduloInicio = async () => {
         process.exit(1);
     }
 };
-
 moduloInicio();
-
-

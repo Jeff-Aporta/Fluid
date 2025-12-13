@@ -1,8 +1,8 @@
+/** 1. Imports */
 import { toCSS } from "./toCSS"
-
 /** 2. Types */
 type TOptions = { camelCase?: boolean }
-
+/** 3. Interfaces */
 /** 4. Variables del Módulo */
 const HELPERS = ["flex", "block", "none", "inline", "inline-block", "grid", "relative", "absolute", "fixed", "sticky", "static", "center", "left", "right", "top", "bottom", "pointer", "hidden", "visible", "transparent", "uppercase", "lowercase", "capitalize", "nowrap", "wrap", "solid", "dashed", "dotted", "flex-start", "flex-end", "space-between", "space-around", "space-evenly", "column", "row", "column-reverse", "row-reverse", "antialiased", "touch", "normal", "unset", "initial", "inherit"]
 const REGEX_PX = /^-?\d+(\.\d+)?px$/ /** valida valor en px */
@@ -11,12 +11,11 @@ const REGEX_KEBAB = /-(.)/g /** captura propiedad kebab para camelize */
 const REGEX_TRANSFORM = /^([a-zA-Z0-9]+)\((.*)\)$/ /** captura transform functions */
 const REGEX_MEASURE = /^-?\d+(\.\d+)?(px|em|rem|%)?$/ /** valida medida con unidad opcional */
 const REGEX_FILTER = /^([a-zA-Z0-9-]+)\((.*)\)$/ /** captura filter functions */
-
 /** 5. Arrow Functions */
 const splitByComma = (str: string): string[] => {
     const parts: string[] = []
     let current = "", depth = 0
-    for (let char of str) {
+    for (const char of str) {
         if (char === "(") depth++
         else if (char === ")") depth--
         if (char === "," && depth === 0) (parts.push(current.trim()), current = "")
@@ -25,11 +24,10 @@ const splitByComma = (str: string): string[] => {
     if (current) parts.push(current.trim())
     return parts
 }
-
 const splitBySpace = (str: string): string[] => {
     const parts: string[] = []
     let current = "", depth = 0
-    for (let char of str) {
+    for (const char of str) {
         if (char === "(") depth++
         else if (char === ")") depth--
         if (/\s/.test(char) && depth === 0) (current && parts.push(current.trim()), current = "")
@@ -38,7 +36,6 @@ const splitBySpace = (str: string): string[] => {
     if (current) parts.push(current.trim())
     return parts
 }
-
 const mapValue = (val: string): string => {
     val = val.trim()
     if (!val) return ""
@@ -47,16 +44,13 @@ const mapValue = (val: string): string => {
     if (val === "auto") return "$.auto"
     if (REGEX_PX.test(val)) return val.replace("px", "")
     if (REGEX_NUM.test(val)) return val
-
     const camelVal = val.replace(REGEX_KEBAB, (_, c) => c.toUpperCase())
     if (HELPERS.includes(val) || HELPERS.includes(camelVal)) return `$.${camelVal}`
-
     if (val.startsWith("max(") || val.startsWith("min(")) {
         const fn = val.startsWith("max(") ? "max" : "min"
         const content = val.slice(4, -1), parts = splitByComma(content).map(mapValue)
         return `$.${fn}(${parts.join(", ")})`
     }
-
     if (val.startsWith("linear-gradient(")) {
         const content = val.slice(16, -1), parts = splitByComma(content)
         if (parts.length >= 2) {
@@ -68,7 +62,7 @@ const mapValue = (val: string): string => {
             const mappedStops = stops.map(s => {
                 const [c, p] = s.split(/\s+(?![^(]*\))/); return p ? `[${mapValue(c)}, ${p.replace("%", "")}]` : mapValue(c)
             })
-            return `$.linearGradient({ dir: ${dirVal}, stops: [${mappedStops.join(", ")}] })`
+            return `$.linearGradient({dir: ${dirVal}, stops: [${mappedStops.join(", ")}]})`
         }
     }
     if (val.startsWith("radial-gradient(")) {
@@ -80,7 +74,7 @@ const mapValue = (val: string): string => {
             if (defParts.length === 2) {
                 const coords = defParts[1].trim().split(/\s+/)
                 shape = defParts[0].trim()
-                at = coords.length >= 2 ? `{ x: "${coords[0]}", y: "${coords[1]}" }` : `"${defParts[1].trim()}"`
+                at = coords.length >= 2 ? `{x: "${coords[0]}", y: "${coords[1]}"}` : `"${defParts[1].trim()}"`
             } else shape = first
         }
         const mappedStops = stops.map((s, idx) => {
@@ -90,9 +84,8 @@ const mapValue = (val: string): string => {
         if (shape) args.push(`shape: "${shape}"`)
         if (at) args.push(`at: ${at}`)
         args.push(`stops: [${mappedStops.join(", ")}]`)
-        return `$.radialGradient({ ${args.join(", ")} })`
+        return `$.radialGradient({${args.join(", ")}})`
     }
-
     if (val.endsWith("vw") && REGEX_NUM.test(val.replace("vw", ""))) return `$.vw(${val.replace("vw", "")})`
     if (val.endsWith("vh") && REGEX_NUM.test(val.replace("vh", ""))) return `$.vh(${val.replace("vh", "")})`
     if (val.endsWith("%") && REGEX_NUM.test(val.replace("%", ""))) return `$.percent(${val.replace("%", "")})`
@@ -115,13 +108,9 @@ const mapValue = (val: string): string => {
     }
     return `"${val}"`
 }
-
 const parseCalc = (expr: string): string => {
     expr = expr.trim()
-    // Handle parentheses grouping: ( ... )
     if (expr.startsWith("(") && expr.endsWith(")")) {
-        // Verify these parens are actually a wrapper for the whole expression and not just part of it
-        // scan to find matching close paren
         let depth = 0, matched = false
         for (let i = 0; i < expr.length; i++) {
             if (expr[i] === "(") depth++
@@ -135,31 +124,17 @@ const parseCalc = (expr: string): string => {
         }
         if (matched) return `$.group(${parseCalc(expr.slice(1, -1))})`
     }
-
-    // Split by operators with precedence: +, - have lower precedence (split first to build tree bottom-up)
     const operators = [["+", "-"], ["*", "/"]]
-
     for (const ops of operators) {
         let depth = 0
-        // standard CSS calc requires spaces around + and - but let's be flexible or assume valid CSS
-        // we iterate from the end to associativity (left-to-right) -> actually for split we want the last operator to be the root
         for (let i = expr.length - 1; i >= 0; i--) {
             const char = expr[i]
             if (char === ")") depth++
             else if (char === "(") depth--
             else if (depth === 0) {
-                // Check for operator. For +/- it must be surrounded by space in CSS calc often, but regex logic is safer
-                // We simply check if char is in ops.
-                // We need to avoid confusing negative numbers "-5px" with subtraction.
-                // A binary operator usually has space or is * /
                 if (ops.includes(char)) {
-                    // Extra check for +/-: if it's - and preceding char is operator or start, it's unary (number sign)
-                    // Simple heuristic: check if strictly surrounded by spaces if + or -. 
-                    // Or just check if there is a Right Hand Side. 
-                    // In valid CSS calc, " - " is substraction, "-5" is negative.
                     const isAddSub = (char === "+" || char === "-")
                     const isSpaceAround = /\s/.test(expr[i - 1] || "") && /\s/.test(expr[i + 1] || "")
-
                     if (!isAddSub || isSpaceAround) {
                         const left = expr.slice(0, i).trim()
                         const right = expr.slice(i + 1).trim()
@@ -170,53 +145,33 @@ const parseCalc = (expr: string): string => {
             }
         }
     }
-
-    // If no operators found at this level, it's a value
     if (REGEX_PX.test(expr)) return `$.px(${expr.replace("px", "")})`
     return mapValue(expr)
 }
 const parseMediaFeature = (feature: string) => {
-    // Remove outer parens
     const content = feature.replace(/^\(|\)$/g, "").trim()
-
-    // Case 1: Standard min/max-width: val
     const stdMatch = content.match(/^(min|max)-(width|height)\s*:\s*(\d+(?:px|em|rem|%)?)$/)
-    if (stdMatch) {
-        return { dim: stdMatch[2], type: stdMatch[1], val: stdMatch[3] }
-    }
-
-    // Case 2: Range Level 4: width <= val, val < width, etc.
-    // Normalized to: dim op val OR val op dim
-    // We only handle simple linear ones here. Range "min < width < max" handled separately or via 'and' composition?
-    // User mentions "invalida sintaxis (500px < width < 900px)". So we focus on "width <= 500px" style.
-
-    // width <= 500px
+    if (stdMatch) return { dim: stdMatch[2], type: stdMatch[1], val: stdMatch[3] }
     const directMatch = content.match(/^(width|height)\s*([<>=]+)\s*(\d+(?:px|em|rem|%)?)$/)
     if (directMatch) {
         const op = directMatch[2]
-        const type = op.includes(">") ? "min" : "max" // > is min-bound, < is max-bound
+        const type = op.includes(">") ? "min" : "max"
         return { dim: directMatch[1], type, val: directMatch[3] }
     }
-
-    // 500px <= width
     const reverseMatch = content.match(/^(\d+(?:px|em|rem|%)?)\s*([<>=]+)\s*(width|height)$/)
     if (reverseMatch) {
         const op = reverseMatch[2]
-        const type = op.includes("<") ? "min" : "max" // 500 < width  => width > 500 => min-bound
+        const type = op.includes("<") ? "min" : "max"
         return { dim: reverseMatch[3], type, val: reverseMatch[1] }
     }
-
     return null
 }
-
 const mapPropValue = (prop: string, val: string): string => {
     const camelProp = prop.replace(REGEX_KEBAB, (_, c) => c.toUpperCase())
-
     if (val.toLowerCase().endsWith("!important")) {
         const cleanVal = val.replace(/\s*!important$/i, "").trim()
         return `$.important(${mapPropValue(prop, cleanVal)})`
     }
-
     if (camelProp === "background") {
         const parts = splitByComma(val).map(mapValue)
         return parts.length > 1 ? `$.background(${parts.join(", ")})` : parts[0]
@@ -224,11 +179,9 @@ const mapPropValue = (prop: string, val: string): string => {
     if (camelProp === "padding" || camelProp === "margin") {
         const rawParts = val.split(/\s+(?![^(]*\))/).map(v => v.trim())
         const parts = rawParts.map(mapValue)
-
         const unitSet = new Set<string>()
         const values: string[] = []
-        let consistent = true 
-    
+        let consistent = true
         for (const part of parts) {
             if (part === "0" || part === "$.auto" || part === "$.inherit" || part.startsWith('"') || part.startsWith("'")) {
                 values.push(part)
@@ -244,19 +197,16 @@ const mapPropValue = (prop: string, val: string): string => {
                 unitSet.add(unit)
                 values.push(val)
             } else if (/^-?\d+(\.\d+)?$/.test(part)) {
-                // Raw number, compatible with any unit if we treat it as value
                 values.push(part)
             } else {
                 consistent = false; break
             }
         }
-
         if (consistent && unitSet.size === 1) {
             const unit = Array.from(unitSet)[0]
             if (values.length === 1) return `[${values[0]}, $.${unit}]`
             return `[${values.join(", ")}, $.${unit}]`
         }
-
         return parts.length === 1 ? parts[0] : `[${parts.join(", ")}]`
     }
     const borderShorthandProps = ["border", "borderTop", "borderBottom", "borderLeft", "borderRight", "borderBlock", "borderInline", "borderBlockStart", "borderBlockEnd", "borderInlineStart", "borderInlineEnd"]
@@ -273,7 +223,7 @@ const mapPropValue = (prop: string, val: string): string => {
         if (width !== "1") args.push(`width: ${width}`)
         if (style !== '"solid"') args.push(`style: ${style}`)
         if (color !== '"black"') args.push(`color: ${color}`)
-        return `{ ${args.join(", ")} }`
+        return `{${args.join(", ")}}`
     }
     if (camelProp === "boxShadow") {
         if (val === "none") return "$.none"
@@ -293,7 +243,7 @@ const mapPropValue = (prop: string, val: string): string => {
             if (lengths[3] && lengths[3] !== "0") args.push(`spread: ${lengths[3]}`)
             if (color) args.push(`color: ${color}`)
             if (inset) args.push(`inset: true`)
-            return `{ ${args.join(", ")} }`
+            return `{${args.join(", ")}}`
         })
         return parsed.length === 1 ? parsed[0] : `[${parsed.join(", ")}]`
     }
@@ -312,7 +262,7 @@ const mapPropValue = (prop: string, val: string): string => {
             if (time) args.push(`time: ${(time as string).startsWith("$.") ? time : `"${time}"`}`)
             if (ease && ease !== "ease") args.push(`ease: ${(ease as string).startsWith("$.") ? ease : `"${ease}"`}`)
             if (delay) args.push(`delay: ${(delay as string).startsWith("$.") ? delay : `"${delay}"`}`)
-            return `{ ${args.join(", ")} }`
+            return `{${args.join(", ")}}`
         })
         return `[${parsed.join(", ")}]`
     }
@@ -326,8 +276,6 @@ const mapPropValue = (prop: string, val: string): string => {
                 else if (["ease", "linear", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end"].includes(p)) timing = p
                 else if (p.startsWith("cubic-bezier")) timing = `$.cubicBezier(${p.match(/cubic-bezier\(([^)]+)\)/)?.[1] ?? ""})`
                 else if (["infinite", "normal", "reverse", "alternate", "alternate-reverse"].includes(p) || /^\d+(\.\d+)?$/.test(p)) {
-                    // Number can be iteration count if not a time (times have units usually, but iter count is unitless)
-                    // But wait, css animation-iteration-count is a number.
                     if (p === "infinite" || /^\d+(\.\d+)?$/.test(p)) iter = p
                     else if (["normal", "reverse", "alternate", "alternate-reverse"].includes(p)) dir = p
                 } else if (["none", "forwards", "backwards", "both"].includes(p)) fill = p
@@ -342,7 +290,7 @@ const mapPropValue = (prop: string, val: string): string => {
             if (dir && dir !== "normal") args.push(`dir: "${dir}"`)
             if (fill && fill !== "none") args.push(`fill: "${fill}"`)
             if (state && state !== "running") args.push(`state: "${state}"`)
-            return `{ ${args.join(", ")} }`
+            return `{${args.join(", ")}}`
         })
         return `[${parsed.join(", ")}]`
     }
@@ -375,7 +323,7 @@ const mapPropValue = (prop: string, val: string): string => {
                     if (lengths[1] && lengths[1] !== "0") args.push(`dY: ${lengths[1]}`)
                     if (lengths[2] && lengths[2] !== "0") args.push(`blur: ${lengths[2]}`)
                     if (color) args.push(`color: ${color}`)
-                    return `$.dropShadow({ ${args.join(", ")} })`
+                    return `$.dropShadow({${args.join(", ")}})`
                 } else {
                     const camelName = name.replace(REGEX_KEBAB, (_, c) => c.toUpperCase())
                     return `$.${camelName}(${mapValue(camelName === "hueRotate" && argsStr.endsWith("deg") ? argsStr.replace("deg", "") : argsStr)})`
@@ -387,13 +335,10 @@ const mapPropValue = (prop: string, val: string): string => {
     }
     const commaParts = splitByComma(val)
     if (commaParts.length > 1 && !val.startsWith('"') && !val.startsWith("'")) return `$.joinComma(${commaParts.map(mapValue).join(", ")})`
-
     const spaceParts = splitBySpace(val)
     if (spaceParts.length > 1 && !val.startsWith('"') && !val.startsWith("'")) return `$.joinSpace(${spaceParts.map(mapValue).join(", ")})`
-
     return mapValue(val)
 }
-
 const mapProp = (prop: string, camelCase: boolean): string => {
     if (camelCase) {
         if (prop.startsWith("-webkit-")) return prop.replace("-webkit-", "webkit-").replace(REGEX_KEBAB, (_, c) => c.toUpperCase())
@@ -402,12 +347,10 @@ const mapProp = (prop: string, camelCase: boolean): string => {
     }
     return `"${prop}"`
 }
-
 const parseBlock = (css: string, depth: number, options: TOptions): string => {
     const props: string[] = [], vars: string[] = [], children: string[] = [], headers: string[] = []
     let buffer = "", inString: string | false = false, pDepth = 0
     let lastHelper: { type: string, dim: string, val?: string, min?: string, max?: string, hasElseLow?: boolean } | null = null
-
     for (let i = 0; i < css.length; i++) {
         const char = css[i]
         if (char === '"' || char === "'") (!inString ? inString = char : inString === char && (inString = false))
@@ -426,26 +369,15 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
             const blockContent = css.substring(i + 1, j)
             i = j
             const childBody = parseBlock(blockContent, depth + 1, options)
-
-            // Media Query Detection for Helpers
-            // Media Query Detection for Helpers
             const features: { [key: string]: { min?: string, max?: string } } = {}
-
-            // 1. Check for Range Syntax (Level 4 complex)
             const rangeMatch = selector.match(/\((\d+(?:px|em|rem|%)?)\s*([<>=]+)\s*(width|height)\s*([<>=]+)\s*(\d+(?:px|em|rem|%)?)\)/)
             if (rangeMatch) {
                 const [, val1, op1, dim, op2, val2] = rangeMatch
-                // 500 < width < 900
-                // val1 op1 dim => 500 < width => width > 500 => min
-                // dim op2 val2 => width < 900 => max
                 if (op1.includes("<")) features[dim] = { ...features[dim], min: val1 }
                 else if (op1.includes(">")) features[dim] = { ...features[dim], max: val1 }
-
                 if (op2.includes("<")) features[dim] = { ...features[dim], max: val2 }
                 else if (op2.includes(">")) features[dim] = { ...features[dim], min: val2 }
             }
-
-            // 2. Parsed standard features
             const parts = selector.split(/\s+and\s+/)
             parts.forEach(part => {
                 const feat = parseMediaFeature(part)
@@ -454,12 +386,9 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
                     else if (feat.type === "max") features[feat.dim] = { ...features[feat.dim], max: feat.val }
                 }
             })
-
-            // Determine Helper
             let helper: string | null = null
             let args: string[] = []
             let dim: string = ""
-
             if (features.width) {
                 dim = "width"
                 if (features.width.min && features.width.max) {
@@ -479,13 +408,11 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
                     helper = "lth"; args = [REGEX_PX.test(features.height.max) ? features.height.max.replace("px", "") : `"${features.height.max}"`]
                 }
             }
-
             if (helper) {
                 let merged = false
                 if (children.length > 0 && lastHelper) {
                     const isLt = helper === "ltw" || helper === "lth"
-                    const numVal = args[0] // For btww matches, we check specific props
-
+                    const numVal = args[0]
                     if (((lastHelper.type === "ltw" || lastHelper.type === "lth") && (helper === "gtw" || helper === "gth")) ||
                         ((lastHelper.type === "gtw" || lastHelper.type === "gth") && (helper === "ltw" || helper === "lth"))) {
                         if (lastHelper.val === numVal && lastHelper.dim === dim) {
@@ -495,7 +422,7 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
                             lastHelper = null
                         }
                     } else if (lastHelper.type === "btww" || lastHelper.type === "btwh") {
-                        if (dim === lastHelper.dim) { // Ensure same dimension
+                        if (dim === lastHelper.dim) {
                             if (isLt && lastHelper.min === numVal && !lastHelper.hasElseLow) {
                                 const last = children.pop()!
                                 children.push(last.replace(/\}\)$/, `}, ${childBody})`))
@@ -511,14 +438,10 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
                         }
                     }
                 }
-
                 if (!merged) {
                     children.push(`...$.${helper}(${args.join(", ")}, ${childBody})`)
-                    if (helper.startsWith("btw")) {
-                        lastHelper = { type: helper, dim, min: args[0], max: args[1], hasElseLow: false }
-                    } else {
-                        lastHelper = { type: helper, dim, val: args[0] }
-                    }
+                    if (helper.startsWith("btw")) lastHelper = { type: helper, dim, min: args[0], max: args[1], hasElseLow: false }
+                    else lastHelper = { type: helper, dim, val: args[0] }
                 }
             } else {
                 const key = /[^a-zA-Z0-9_]/.test(selector) ? `"${selector}"` : selector
@@ -565,38 +488,23 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
     }
     const inlineParts: string[] = []
     const blockParts: string[] = []
-
     const normalProps: string[] = []
     const importantProps: string[] = []
-
     props.forEach(p => {
         const colonIndex = p.indexOf(":")
         const key = p.substring(0, colonIndex).trim()
         const val = p.substring(colonIndex + 1).trim()
-        if (val.startsWith("$.important(") && val.endsWith(")")) {
-            importantProps.push(`${key}: ${val.slice(12, -1)}`)
-        } else {
-            normalProps.push(p)
-        }
+        if (val.startsWith("$.important(") && val.endsWith(")")) importantProps.push(`${key}: ${val.slice(12, -1)}`)
+        else normalProps.push(p)
     })
-
     if (normalProps.length > 0) inlineParts.push(normalProps.join(", "))
-    if (importantProps.length > 0) inlineParts.push(`...$.important({ ${importantProps.join(", ")} })`)
-
+    if (importantProps.length > 0) inlineParts.push(`...$.important({${importantProps.join(", ")}} )`)
     if (headers.length === 1) blockParts.push(`initheader: ${JSON.stringify(headers[0])}`)
     else if (headers.length > 1) blockParts.push(`initheader: [${headers.map(h => JSON.stringify(h)).join(", ")}]`)
-
-    if (vars.length > 0) {
-        blockParts.push(`vars: { ${vars.map(v => v.trim().replace(/^vars:\s*/, "")).join(", ")} }`)
-    }
-
-    if (children.length > 0) {
-        blockParts.push(...children)
-    }
-
+    if (vars.length > 0) blockParts.push(`vars: {${vars.map(v => v.trim().replace(/^vars:\s*/, "")).join(", ")}}`)
+    if (children.length > 0) blockParts.push(...children)
     let js = "{"
     if (inlineParts.length > 0) js += " " + inlineParts.join(", ")
-
     if (blockParts.length > 0) {
         if (inlineParts.length > 0) js += ","
         js += "\n" + blockParts.map(b => "    ".repeat(depth) + b).join(",\n") + "\n" + "    ".repeat(depth - 1)
@@ -604,17 +512,14 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
         js += " "
     }
     js += "}"
-
     return js
 }
-
 /** 6. Funciones Estándar y Clases */
 /** Función principal de traducción */ export function traductor(css: string, options: TOptions = { camelCase: true }): string {
     css = css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, " ").trim()
     const body = parseBlock(css, 1, options)
     return `$ => (${body})`
 }
-
 /** Función inversa: JS string a CSS string */ export function translateToCSS(js: string): string {
     try {
         let evaluated = new Function("return " + js)()
@@ -630,3 +535,4 @@ const parseBlock = (css: string, depth: number, options: TOptions): string => {
         return ""
     }
 }
+/** 7. Exports */

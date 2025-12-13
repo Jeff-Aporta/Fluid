@@ -261,7 +261,7 @@ $ => ({
         },
         ">h1": {
             margin: [0, $.auto, 2, $.rem], fontSize: $.rem(1.75), fontWeight: 600, textAlign: $.center, background: $.linearGradient({ dir: 135, stops: [$.cssVar("theme-primary"), $.cssVar("theme-primary-light")] }), webkitBackgroundClip: "text", webkitTextFillColor: $.transparent, backgroundClip: "text", display: $.flex, alignItems: $.center, justifyContent: $.center, gap: 12,
-            "&::before": { content: $.text(""), display: $.inlineBlock, width: 32, height: 32, backgroundImage: $.url("doc/assets/logo.svg"), backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: $.center },
+            "&::before": { content: $.text(""), display: $.inlineBlock, width: 32, height: 32, backgroundImage: $.url("public/assets/logo.svg"), backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: $.center },
             a: { color: $.inherit, textDecoration: $.none },
             ".app-nav": { display: $.block, position: $.static }
         },

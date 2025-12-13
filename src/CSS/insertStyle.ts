@@ -1,7 +1,6 @@
 /** 1. Imports */
 import { toCSS, buildStyle } from "./toCSS"
 import type { InsertStyleInput } from "./types"
-
 /** 6. Funciones Estándar y Clases */
 /** Inserta o actualiza estilos en el DOM */
 export function insertStyle(opt: InsertStyleInput): HTMLStyleElement {

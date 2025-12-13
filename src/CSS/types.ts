@@ -1,12 +1,9 @@
 import type { TStrNum } from "@components/ui/ts/constantes"
 import type { range, rangeMapEntries, transition, animation, transform, boxShadow, convertBoxShadow, border, rgb, rgba, important, lerpcss, clampwcss, clamphcss, hsl, lightDark, calc, url, format, hslFrom, rgbFrom, cssVar, em, rem, px, percent, s, ms, deg, vh, vw, join, joinSpace, joinComma, linearGradient, radialGradient, background, font, margin, padding, cubicBezier, filter, dropShadow, blur, brightness, contrast, hueRotate, invert, opacity, saturate, sepia, text, ltw, gtw, btww, lth, gth, btwh, add, sub, mult, div, group, max, min, addagr, subagr, multagr, divagr } from "./helpers"
-
 import type { lerp, clamp, porcentajeEnRango, mapear, random, randomElemento, randomEntero, enRango, distancia } from "@components/ui/utilidades/ts/matematicas"
-
 // --- Types ---
 export type TVars = Record<string, TStrNum | TStrNum[] | undefined>
 export type TValorMapaCSS = TStrNum | boolean | null | undefined | TMapaCSS | TMapaCSS[] | ((helpers: THelpers) => string | number | boolean | TMapaCSS) | TVars | string[]
-
 export type THelpers = {
     none: string; hidden: string; visible: string; absolute: string; relative: string
     block: string; inline: string; inlineBlock: string; flex: string; grid: string
@@ -29,16 +26,15 @@ export type THelpers = {
     text: typeof text;
     ltw: typeof ltw; gtw: typeof gtw; btww: typeof btww; lth: typeof lth; gth: typeof gth; btwh: typeof btwh
     lerp: typeof lerpcss // alias para mejor legibilidad
+    clampw: typeof clampwcss; clamph: typeof clamphcss; lerpw: typeof lerpcss; lerph: typeof import("./helpers").lerphcss
     math: {
         lerp: typeof lerp; clamp: typeof clamp; porcentajeEnRango: typeof porcentajeEnRango; mapear: typeof mapear;
         random: typeof random; randomElemento: typeof randomElemento; randomEntero: typeof randomEntero; enRango: typeof enRango; distancia: typeof distancia
     }
 }
-
 // --- Interfaces ---
 export interface TMapaCSS { [selector: string]: TValorMapaCSS; vars?: Record<string, TStrNum | TStrNum[] | undefined> }
 export interface ToCSSOptions extends TMapaCSS { inferir?: boolean; asString?: boolean; decimalesInferencia?: number; clasesKebab?: boolean; profundidad?: number; initheader?: string | string[]; pretty?: boolean }
 export interface Expr { resolve(ctxUnit?: string): string; preferredUnit?: string }
-
 export interface InsertStyleOptions { style?: HTMLStyleElement; id?: string; clases?: string | string[]; css?: string | ToCSSOptions | ((helpers: THelpers) => ToCSSOptions);[key: string]: any }
 export type InsertStyleInput = InsertStyleOptions | string

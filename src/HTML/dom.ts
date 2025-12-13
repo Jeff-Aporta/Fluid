@@ -4,8 +4,9 @@ import { insertStyle } from "../CSS/insertStyle"
 import { HELPERS as CSS_HELPERS } from "../CSS/helpers"
 import type { ElementTarget, JSONElement, HTMLElementBuilder } from "./types"
 export * from "./types"
-
-/** 2. Variables del Módulo */
+/** 2. Types */
+/** 3. Interfaces */
+/** 4. Variables del Módulo */
 const HELPERS = { br: { br: {} }, hr: { hr: {} } }
 const REGEX_INVALID_SELECTOR = /[\s>+~]/ /** valida selectores prohibidos */
 const REGEX_TEXT_CONTENT = /\{([^\}]+)\}/ /** captura contenido entre llaves */
@@ -14,8 +15,7 @@ const REGEX_ATTR_PAIR = /([a-zA-Z0-9-_]+)(?:=(?:"([^"]*)"|'([^']*)'|([^ ]*)))?/g
 const REGEX_TAG = /^([a-zA-Z0-9-]+)/ /** captura etiqueta inicial */
 const REGEX_ID = /#([a-zA-Z0-9-_]+)/ /** captura id */
 const REGEX_CLASS = /\.([a-zA-Z0-9-_]+)/g /** captura clases */
-
-/** 3. Arrow Functions */
+/** 5. Arrow Functions */
 const parseEmmetString = (str: string): HTMLElement => {
     let content = ''
     str = str.replace(REGEX_TEXT_CONTENT, (_, c) => (content = c, ''))
@@ -36,8 +36,7 @@ const parseEmmetString = (str: string): HTMLElement => {
     if (content) el.innerText = content
     return el
 }
-
-/** 4. Funciones Estándar y Clases */
+/** 6. Funciones Estándar y Clases */
 class ElementBuilderImpl implements HTMLElementBuilder {
     constructor(private _el: HTMLElement) {
         ["resize", "keydown", "keyup", "mousedown", "mouseup", "mousemove", "drag", "mouseout", "mouseenter", "click", "dblclick", "contextmenu", "touchstart", "touchend"].forEach(ev => {
@@ -45,19 +44,13 @@ class ElementBuilderImpl implements HTMLElementBuilder {
         })
     }
     resume() { return this._el }
-    html(val?: string, outer?: boolean) {
-        if (typeof val === "string") {
-            this._el.innerHTML = val
-            return this
-        }
-        return outer ? this._el.outerHTML : this
+    html(valOrOuter: string | boolean = true) {
+        if (typeof valOrOuter === "string") { this._el.innerHTML = valOrOuter; return this }
+        return valOrOuter ? this._el.outerHTML : this._el.innerHTML
     }
     get innerHTML() { return this._el.innerHTML }
     set innerHTML(val: string) { this._el.innerHTML = val }
-    appendHtml(val: string) {
-        this._el.innerHTML += val
-        return this
-    }
+    appendHtml(val: string) { this._el.innerHTML += val; return this }
     text(val?: string) {
         if (val === undefined) return this._el.innerText
         this._el.innerText = val
@@ -74,7 +67,8 @@ class ElementBuilderImpl implements HTMLElementBuilder {
     get scrollX() { return this._el.scrollLeft }
     set scrollX(val: number) { this._el.scrollLeft = val }
     get rect() { return this._el.getBoundingClientRect() }
-
+    get firstChild() { return this._el.firstChild }
+    get parentElement() { return this._el.parentElement }
     closest(selector: string) {
         const res = this._el.closest(selector)
         return res ? element(res as HTMLElement) : false
@@ -83,7 +77,7 @@ class ElementBuilderImpl implements HTMLElementBuilder {
     selectAll(selector: string) { return Array.from(this._el.querySelectorAll(selector)).map(e => element(e as HTMLElement)) }
     appendChild(...children: any[]) {
         children.forEach((c) => {
-            if (!c) return
+            if (!c) return;
             if (typeof c === "function") { this.appendChild(c(HELPERS)); return }
             if (typeof c === "string") this._el.appendChild(document.createTextNode(c))
             else if (c instanceof Node) this._el.appendChild(c)
@@ -94,7 +88,7 @@ class ElementBuilderImpl implements HTMLElementBuilder {
     }
     prepend(...children: any[]) {
         [...children].reverse().forEach((c) => {
-            if (!c) return
+            if (!c) return;
             if (typeof c === "function") { this.prepend(c(HELPERS)); return }
             if (typeof c === "string") this._el.prepend(document.createTextNode(c))
             else if (c instanceof Node) this._el.prepend(c)
@@ -112,6 +106,7 @@ class ElementBuilderImpl implements HTMLElementBuilder {
             else if (key === "content") typeof value === "string" ? this.content(value) : this.appendChild(value as any)
             else if (key === "id") this.id(value as string)
             else if (typeof (this as any)[key] === "function") (this as any)[key](value)
+            else this.attr(key, value as any)
         })
         children && this.appendChild(...(Array.isArray(children) ? children.flat() : [children]))
         return this
@@ -132,8 +127,8 @@ class ElementBuilderImpl implements HTMLElementBuilder {
         return this
     }
     style(props: any) {
-        props = buildStyle(props)
-        Object.assign(this._el.style, props)
+        const css = toCSS(props)
+        this._el.style.cssText += css
         return this
     }
     dataset(props: any, value?: any) {
@@ -151,6 +146,8 @@ class ElementBuilderImpl implements HTMLElementBuilder {
     toggleClass(cls: string | string[]) { return this.manipularClases(cls, "toggle") }
     content(html: string) { this._el.innerHTML = html; return this }
     onclick(fn: any) { this._el.onclick = fn; return this }
+    onmouseenter(fn: any) { this._el.onmouseenter = fn; return this }
+    onmouseleave(fn: any) { this._el.onmouseleave = fn; return this }
     on({ event, handler, options }: any) { this._el.addEventListener(event, handler, options); return this }
     ready(fn: () => void) {
         if (this._el === document.documentElement || this._el === document.body || (this._el as any) === document) document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", fn) : fn()
@@ -171,12 +168,11 @@ class ElementBuilderImpl implements HTMLElementBuilder {
     touchstart!: (handler: (ev: TouchEvent) => any) => HTMLElementBuilder
     touchend!: (handler: (ev: TouchEvent) => any) => HTMLElementBuilder
 }
-
-export function element(target: ElementTarget[], param: false): (HTMLElementBuilder | false)[]
-export function element(target: ElementTarget[], param?: string | true): HTMLElementBuilder[]
-export function element(target: ElementTarget, param: false): HTMLElementBuilder | false
-export function element(target: ElementTarget, param?: string | true): HTMLElementBuilder
-export function element(target: ElementTarget | ElementTarget[], param?: string | boolean): HTMLElementBuilder | false | (HTMLElementBuilder | false)[] {
+/** 7. Exports */ export function element(target: ElementTarget[], param: false): (HTMLElementBuilder | false)[]
+/** 7. Exports */ export function element(target: ElementTarget[], param?: string | true): HTMLElementBuilder[]
+/** 7. Exports */ export function element(target: ElementTarget, param: false): HTMLElementBuilder | false
+/** 7. Exports */ export function element(target: ElementTarget, param?: string | true): HTMLElementBuilder
+/** 7. Exports */ export function element(target: ElementTarget | ElementTarget[], param?: string | boolean): HTMLElementBuilder | false | (HTMLElementBuilder | false)[] {
     if (Array.isArray(target)) return target.map(t => element(t, param as any)) as any
     if ((target as any) instanceof ElementBuilderImpl || (target as any).resume) return target as HTMLElementBuilder
     let el: HTMLElement | null = null, props: JSONElement | null = null
@@ -201,14 +197,18 @@ export function element(target: ElementTarget | ElementTarget[], param?: string 
         if (!el) el = parseEmmetString(target)
     }
     else if (target instanceof Element || target instanceof Window || target instanceof Document) el = target as HTMLElement
+    else if (typeof target === 'object' && 'tag' in target) {
+        const { tag, ...rest } = target as any
+        el = parseEmmetString(tag)
+        props = rest
+    }
     else { const key = Object.keys(target)[0]; el = parseEmmetString(key); props = target[key] }
     if (!el) throw new Error("No se pudo resolver el elemento")
     const builder = new ElementBuilderImpl(el)
     if (props) builder.fromJSON(props)
     return builder
 }
-
-export const StyleSingleton = {
+/** 7. Exports */ export const StyleSingleton = {
     styles: {} as Record<string, any>,
     add(id: string, css: any) {
         css = buildStyle(css)
@@ -225,12 +225,13 @@ export const StyleSingleton = {
         }
         insertStyle({ id: "fluid-ui-singleton", css: toCSS(Object.values(this.styles).reduce((acc, val) => deepMerge(acc, val), {})) })
     }
-}
-
-const updateVars = () => StyleSingleton.add("variables", ($: typeof CSS_HELPERS) => ({ ":root": { vars: { windowWidth: $.px(window.innerWidth), windowHeight: $.px(window.innerHeight) } } }))
-
-if (typeof window !== "undefined") {
-    window.addEventListener("resize", updateVars)
-    document.addEventListener("DOMContentLoaded", updateVars)
-    updateVars()
-}
+};
+/** 8. Inicialización del módulo (IIFE obligatorio) */
+(function moduloInicio() {
+    const updateVars = () => StyleSingleton.add("variables", ($: typeof CSS_HELPERS) => ({ ":root": { vars: { windowWidth: $.px(window.innerWidth), windowHeight: $.px(window.innerHeight) } } }))
+    if (typeof window !== "undefined") {
+        window.addEventListener("resize", updateVars)
+        document.addEventListener("DOMContentLoaded", updateVars)
+        updateVars()
+    }
+})();

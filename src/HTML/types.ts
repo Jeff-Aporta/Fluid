@@ -1,11 +1,10 @@
 // 1. Types
 export type ElementTarget = string | Element | Window | Document | JSONElement | ((helpers: any) => JSONElement) | ElementTarget[]
-
 // 2. Interfaces
 export interface JSONElement { [key: string]: any }
 export interface HTMLElementBuilder {
     resume: () => HTMLElement
-    html: (val?: string) => string | HTMLElementBuilder
+    html: (valOrOuter?: string | boolean) => string | HTMLElementBuilder
     innerHTML: string
     appendHtml: (val: string) => HTMLElementBuilder
     text: (val?: string) => string | HTMLElementBuilder
@@ -35,6 +34,8 @@ export interface HTMLElementBuilder {
     toggleClass: (cls: string | string[]) => HTMLElementBuilder
     content: (html: string) => HTMLElementBuilder
     onclick: (fn: (ev: MouseEvent) => any) => HTMLElementBuilder
+    onmouseenter: (fn: (ev: MouseEvent) => any) => HTMLElementBuilder
+    onmouseleave: (fn: (ev: MouseEvent) => any) => HTMLElementBuilder
     on: ({ event, handler, options }: { event: string; handler: EventListenerOrEventListenerObject; options?: boolean | AddEventListenerOptions }) => HTMLElementBuilder
     resize: (handler: (ev: UIEvent) => any) => HTMLElementBuilder
     keydown: (handler: (ev: KeyboardEvent) => any) => HTMLElementBuilder

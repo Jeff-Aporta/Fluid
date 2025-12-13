@@ -1,18 +1,15 @@
 // @ts-nocheck
 /** 1. Imports */
 const { FluidUI, CodeMirror, ReactDOM, React: { useState, useEffect, useRef } } = window;
-
 /** 6. Funciones Estándar y Clases */
 /** Componente principal del traductor */ function TraductorApp() {
     const [cssInput, setCssInput] = useState("");
     const [jsOutput, setJsOutput] = useState("");
     const [error, setError] = useState(null);
-
     const cssEditorRef = useRef(null);
     const jsEditorRef = useRef(null);
     const cssInstance = useRef(null);
     const jsInstance = useRef(null);
-
     /** Inicializa editor CSS */ useEffect(() => {
         if (cssEditorRef.current && !cssInstance.current) {
             cssInstance.current = CodeMirror(cssEditorRef.current, { mode: "css", theme: "dracula", lineNumbers: true, lineWrapping: false, value: cssInput });
@@ -33,15 +30,12 @@ const { FluidUI, CodeMirror, ReactDOM, React: { useState, useEffect, useRef } } 
             });
         }
     }, []);
-
     /** Sincroniza CSS input */ useEffect(() => {
         if (cssInstance.current && cssInstance.current.getValue() !== cssInput) cssInstance.current.setValue(cssInput);
     }, [cssInput]);
-
     /** Sincroniza JS output */ useEffect(() => {
         if (jsInstance.current && jsInstance.current.getValue() !== jsOutput) jsInstance.current.setValue(jsOutput);
     }, [jsOutput]);
-
     /** Traduce CSS a JS */ const translateToJS = (css: string) => {
         try {
             setError(null);
@@ -53,23 +47,19 @@ const { FluidUI, CodeMirror, ReactDOM, React: { useState, useEffect, useRef } } 
             setError(err.message);
         }
     };
-
     /** Traduce JS a CSS */ const translateToCSS = (js: string) => {
         try {
             setError(null);
             if (!js.trim()) return setCssInput("");
             if (typeof FluidUI === "undefined" || !FluidUI.toCSS) throw new Error("FluidUI.toCSS no está disponible.");
-
             let arrowFn;
             try { arrowFn = eval(js); } catch (e) { return; }
             if (typeof arrowFn !== "function") return;
-
             setCssInput(FluidUI.toCSS(arrowFn));
         } catch (err) {
             console.error("Error translating JS to CSS:", err);
         }
     };
-
     return (
         <div className="app-container">
             <div className="header">
@@ -89,7 +79,6 @@ const { FluidUI, CodeMirror, ReactDOM, React: { useState, useEffect, useRef } } 
         </div>
     );
 }
-
 /** 8. Inicialización del módulo */
 (function moduloInicio() {
     FluidUI?.insertStyle?.({
@@ -109,7 +98,6 @@ const { FluidUI, CodeMirror, ReactDOM, React: { useState, useEffect, useRef } } 
             ".hidden": { display: $.none }
         })
     });
-
     /** Renderiza aplicación */
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<TraductorApp />);
